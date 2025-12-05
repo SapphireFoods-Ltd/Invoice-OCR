@@ -1,0 +1,915 @@
+﻿@model Vendor_OCR.Models.InvoicePageViewModel
+@using Vendor_OCR.Models
+@using System.Text.Json
+@inject IHttpContextAccessor HttpContextAccessor
+@{
+    var storeWise = Model?.StoreWise ?? new List<HomeModel>();
+    var utpe = HttpContextAccessor.HttpContext?.Session.GetString("user_type");
+}
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+<style>
+
+    :root {
+        /* smaller circle size for compact view */
+        --circle-w: 26px;
+        --gap: 80px;
+    }
+
+    /* compute half connector length = (circle + gap) / 2 */
+    :root {
+        --connector-half: calc((var(--circle-w) + var(--gap)) / 2);
+    }
+
+    /* Basic table vertical alignment */
+    .store-table th, .store-table td {
+        vertical-align: middle;
+    }
+
+    /* Keep your status classes and colors */
+    .stage-pending {
+        background: #9ca3af !important;
+    }
+
+    .stage-done {
+        background: #22c55e !important;
+    }
+
+    .stage-rejected {
+        background: #ef4444 !important;
+    }
+
+    .re-uploaded {
+        background: #0d6efd !important;
+    }
+
+    .stage-warning {
+        background: #ffc107 !important;
+        color: #363636 !important;
+    }
+
+    .stage-pending-first {
+        background: #facc15 !important;
+    }
+
+    .label {
+        margin-top: 6px;
+        font-size: 11px;
+        text-align: center;
+        max-width: 120px;
+        word-wrap: break-word;
+        color: #222;
+    }
+
+    /* ===== Stages column container: spread the 4 stage slots across the full cell width ===== */
+    .store-stage-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between; /* spread slots evenly */
+        gap: 0;
+        padding: 8px 10px; /* reduced padding for compact rows */
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    /* Each stage gets an equal slot (flex:1) so 4 slots fill the column*/
+    .store-stage {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        position: relative;
+        flex: 1 1 0; /* equal width slots */
+        box-sizing: border-box;
+        min-width: 0; /* prevents overflowing */
+        padding: 0 6px;
+    }
+
+        /* Circle appearance */
+        .store-stage .circle {
+            width: var(--circle-w);
+            height: var(--circle-w);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-weight: bold;
+            font-size: calc(var(--circle-w) * 0.45);
+            margin-bottom: 4px;
+            position: relative; /* anchors pseudo-elements */
+            z-index: 3;
+            box-sizing: border-box;
+        }
+
+        .store-stage .label {
+            font-size: 10px;
+            text-align: center;
+            margin-top: 4px;
+        }
+
+    
+        .store-stage .circle::after {
+            content: "";
+            position: absolute;
+            top: 50%;
+            left: calc(100% - 1px); /* start at right edge (1px inside) to avoid visible gap */
+            transform: translateY(-50%);
+            width: var(--connector-half);
+            height: 2px;
+            background: #cbd5e1;
+            z-index: 1;
+            border-radius: 1px;
+        }
+
+        /* Left-half connector */
+        .store-stage .circle::before {
+            content: "";
+            position: absolute;
+            top: 50%;
+            right: calc(100% - 1px); /* start at left edge (1px inside) */
+            transform: translateY(-50%);
+            width: var(--connector-half);
+            height: 2px;
+            background: #cbd5e1;
+            z-index: 1;
+            border-radius: 1px;
+        }
+
+    /* Do not draw left-half for first slot or right-half for last slot */
+    .store-stage-row .store-stage:first-child .circle::before {
+        display: none;
+    }
+
+    .store-stage-row .store-stage:last-child .circle::after {
+        display: none;
+    }
+
+    /* Hide any old .connector markup if present */
+    .store-stage-row .connector {
+        display: none;
+    }
+
+    /* ---------- Compact table rows & stage items ---------- */
+
+    /* Make table rows shorter */
+    .table.table-hover.table-bordered td,
+    .table.table-hover.table-bordered th {
+        padding: 0.35rem 0.6rem; /* vertical padding reduced */
+        font-size: 0.86rem; /* slightly smaller text */
+    }
+
+    /* Make pagination compact */
+    #pagination .pagination .page-link {
+        padding: 0.25rem 0.45rem;
+        font-size: 0.86rem;
+    }
+
+    /* small active pill */
+    #pagination .page-item.active .page-link {
+        border-radius: 0.35rem;
+    }
+
+    /* move pagination to right on small screens as well */
+    @@media (max-width: 520px) {
+        #pagination
+
+    {
+        justify-content: flex-end !important;
+    }
+
+    /* maintain readable spacing on mobile */
+    .store-stage {
+        flex: 0 0 50%;
+        margin-bottom: 6px;
+    }
+
+        .store-stage .circle::before,
+        .store-stage .circle::after {
+            display: none;
+        }
+
+    }
+</style>
+<style>
+     .col-id {
+         width: 80px; /* Adjust size as needed */
+         white-space: nowrap;
+     }
+
+     .status-card.active {
+         border-width: 3px !important;
+         transform: scale(1.03);
+         transition: all 0.2s ease-in-out;
+         box-shadow: 0 0 10px rgba(0,0,0,0.15);
+         cursor: pointer;
+     }
+
+     .status-card {
+         cursor: pointer;
+     }
+</style>
+
+<div class="container mt-5">
+    <div class="card shadow-lg border-0">
+        <div class="card-body">
+
+            <div class="row mb-4 text-center">
+                <div class="col-md-4">
+                    <div class="status-card card border-primary shadow-sm" id="cardPending" data-status="P">
+                        <div class="card-body">
+                            <h5 class="card-title text-primary fw-bold">Pending</h5>
+                            <p class="display-6 fw-semibold text-primary mb-0" id="countPending">@ViewBag.PendingCount</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="status-card card border-success shadow-sm" id="cardApproved" data-status="A">
+                        <div class="card-body">
+                            <h5 class="card-title text-success fw-bold">Approved</h5>
+                            <p class="display-6 fw-semibold text-success mb-0" id="countApproved">@ViewBag.ApprovedCount</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="status-card card border-danger shadow-sm" id="cardRejected" data-status="R">
+                        <div class="card-body">
+                            <h5 class="card-title text-danger fw-bold">Rejected</h5>
+                            <p class="display-6 fw-semibold text-danger mb-0" id="countRejected">@ViewBag.RejectedCount</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+                <div class="card mb-4 border-0 shadow-sm">
+              <div id="invoiceTableWrapper">
+                <div class="card-header bg-light fw-semibold">Invoice Details</div>
+                <div class="card-body">
+                    
+                    <table id="invoiceTable" class="table table-hover table-bordered align-middle">
+                        <thead>
+                            <tr class="table-light">
+                                <th>Invoice Id</th>
+                                <th>Invoice Name</th>
+                                <th>Insert Date</th>
+                                <th>Category</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+
+                            <!-- ✅ Search Inputs Row -->
+                            <tr class="filters bg-light">
+                                <th><input type="text" class="form-control form-control-sm" placeholder="Search ID" /></th>
+                                <th><input type="text" class="form-control form-control-sm" placeholder="Search Invoice" /></th>
+                                <th>
+                                    <input type="text" class="form-control form-control-sm datepicker" placeholder="dd-mm-yyyy" autocomplete="off" />
+                                </th>
+                                <th><input type="text" class="form-control form-control-sm" placeholder="Search Category" /></th>
+                                <th><input type="text" class="form-control form-control-sm" placeholder="Search Status" /></th>
+                                <th></th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            @foreach (var inv in Model.VendorInvoiceModel)
+                            {
+                                <tr>
+                                    <td>@inv.ID</td>
+                                    <td>
+                                        <div class="d-flex align-items-center justify-content-between">
+                                            <a href="#" class="open-pdf-link text-primary fw-semibold text-decoration-none flex-grow-1"
+                                               data-s3="@inv.S3BucketLink"
+                                               data-name="@inv.raw_Name">
+                                                @inv.raw_Name
+                                            </a>
+
+                                            @if (!string.IsNullOrEmpty(inv.S3BucketLink))
+                                            {
+                                                <a href="@inv.S3BucketLink"
+                                                   target="_blank"
+                                                   title="Open in new tab"
+                                                   class="text-success ms-2"
+                                                   style="font-size: 0.9rem;">
+                                                    <i class="bi bi-box-arrow-up-right"></i>
+                                                </a>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted ms-2" style="font-size: 0.9rem;">
+                                                    <i class="bi bi-dash-lg"></i>
+                                                </span>
+                                            }
+                                        </div>
+                                    </td>
+                                    <td>@inv.ins_dt?.ToString("dd-MM-yyyy")</td>
+                                    <td>@inv.Category</td>
+                                    <td>
+                                        @if (inv.action == "OCR Approved")
+                                        {
+                                            <span class="text-success">@inv.action</span>
+                                        }
+                                        else if (inv.action == "OCR Rejected")
+                                        {
+                                            <span class="text-danger">@inv.action</span>
+                                        }
+                                        else
+                                        {
+                                            <span>@inv.action</span>
+                                        }
+                                    </td>
+                                   <td>
+                                       @if (inv.action == "OCR Approved")
+                                       {
+                                           <span class="text-success fw-bold">&#10003;</span>  <!-- ✔ green tick -->
+                                       }
+                                       else if (inv.action == "OCR Rejected")
+                                       {
+                                           <a href="/Upload/Upload?id=@inv.ID" class="btn btn-sm btn-outline-primary">
+                                                <i class="bi bi-pencil-square"></i> Edit
+                                            </a>
+                                       }
+                                       else
+                                       {
+                                           <span>-</span>  <!-- Pending -->
+                                       }
+                                   </td>
+
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                   </div>
+                </div>
+            </div>
+
+            <div class="card shadow-sm">
+                <div class="card-header bg-light fw-semibold">Store-wise Invoices</div>
+                <div class="card-body p-0">
+                    <!-- added id to table for pager -->
+                    <table id="storeTable" class="table table-hover table-bordered">
+                        <thead>
+                            <tr>
+                                <th style="width:8%;">InvoiceNumber</th>
+                                <th style="width:42%;">Invoice Name</th>
+                                <th style="width:50%;">Stages</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (!storeWise.Any())
+                            {
+                                <tr><td colspan="6" class="text-center py-3">No store-wise invoices found.</td></tr>
+                            }
+                            else
+                            {
+                                foreach (var row in storeWise)
+                                {
+                                    <tr>
+                                        <td>@(String.IsNullOrEmpty(row.InvoiceNumber) ? "—" : row.InvoiceNumber)</td>
+                                        @if (row.Status == "P" || row.Status == "R" || row.Status == "OR")
+                                        {
+                                            <td>
+                                                <div class="d-flex align-items-center justify-content-between">
+                                                    <a href="javascript:void(0)"
+                                                       class="text-primary text-decoration-none previewBtn"
+                                                       data-invoice="@row.InvoiceName"
+                                                       data-local-url="@Url.Content("~/tempUploads/" + row.InvoiceName)">
+                                                        @row.raw_Name
+                                                    </a>
+                                                    <a href="@Url.Content("~/tempUploads/" + row.InvoiceName)"
+                                                       target="_blank"
+                                                       title="Open in new tab"
+                                                       class="text-success ms-2"
+                                                       style="font-size: 0.9rem;">
+                                                        <i class="bi bi-box-arrow-up-right"></i>
+                                                    </a>
+                                                </div>
+                                            </td>
+                                        }
+                                        else if (row.Status == "A" || row.Status == null || row.Status == "OA")
+                                        {
+                                            <td>
+                                                <div class="d-flex align-items-center justify-content-between">
+                                                    <a href="#" class="open-pdf-link text-primary fw-semibold text-decoration-none flex-grow-1"
+                                                       data-s3="@row.S3_BucketPath"
+                                                       data-name="@row.raw_Name">
+                                                        @row.raw_Name
+                                                    </a>
+
+                                                    @if (!string.IsNullOrEmpty(row.S3_BucketPath))
+                                                    {
+                                                        <a href="@row.S3_BucketPath"
+                                                           target="_blank"
+                                                           title="Open in new tab"
+                                                           class="text-success ms-2"
+                                                           style="font-size: 0.9rem;">
+                                                            <i class="bi bi-box-arrow-up-right"></i>
+                                                        </a>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="text-muted ms-2" style="font-size: 0.9rem;">
+                                                            <i class="bi bi-dash-lg"></i>
+                                                        </span>
+                                                    }
+                                                </div>
+                                            </td>
+                                        }
+
+                                        <td>
+                                            <div class="store-stage-row" role="group" aria-label="stages">
+                                                @{
+
+                                                    // -------- Uploaded Stage (original logic preserved) -----------
+                                                    var uploadedVal = (row.Uploaded ?? "").Trim();
+                                                    var approvedVal = (row.Approved ?? "").Trim();
+                                                    var uploadedCls = "stage-pending";
+                                                    var uploadedIc = "<i class='fa-regular fa-clock'></i>";
+
+                                                    if (approvedVal.Equals("Rejected", StringComparison.OrdinalIgnoreCase))
+                                                    {
+                                                        // If Approved is Rejected, Uploaded is always yellow!
+                                                        uploadedCls = "stage-warning";
+                                                        uploadedIc = "<i class='fa-regular fa-clock'></i>";
+                                                    }
+                                                    else if (uploadedVal.Equals("Done", StringComparison.OrdinalIgnoreCase))
+                                                    {
+                                                        uploadedCls = "stage-done";
+                                                        uploadedIc = "<i class='fa-solid fa-check'></i>";
+                                                    }
+                                                    else if (uploadedVal.Equals("Rejected", StringComparison.OrdinalIgnoreCase))
+                                                    {
+                                                        uploadedCls = "stage-rejected";
+                                                        uploadedIc = "<i class='fa-solid fa-xmark'></i>";
+                                                    }
+                                                    else if (uploadedVal.Equals("Re-Uploaded", StringComparison.OrdinalIgnoreCase) ||
+                                                    uploadedVal.Equals("Reuploaded", StringComparison.OrdinalIgnoreCase))
+                                                    {
+                                                        uploadedCls = "re-uploaded";
+                                                        uploadedIc = "<i class='fa-solid fa-rotate-right'></i>";
+                                                    }
+                                                }
+                                                <div class="store-stage">
+                                                    <div class="circle @uploadedCls">@Html.Raw(uploadedIc)</div>
+                                                    <div class="label">Uploaded</div>
+                                                </div>
+                                                @if (!string.IsNullOrEmpty(approvedVal) && utpe != "2")
+                                                {
+                                                    var approvedCls = "stage-pending";
+                                                    var approvedIc = "<i class='fa-regular fa-clock'></i>";
+                                                    var approvedLabel = "Approved";
+
+                                                    if (approvedVal.Equals("Rejected", StringComparison.OrdinalIgnoreCase))
+                                                    {
+                                                        approvedCls = "stage-rejected";
+                                                        approvedIc = "<i class='fa-solid fa-xmark'></i>";
+                                                        approvedLabel = "Rejected";
+                                                    }
+                                                    else if (uploadedVal.Equals("Done", StringComparison.OrdinalIgnoreCase)
+                                                    && approvedVal.Equals("Pending", StringComparison.OrdinalIgnoreCase))
+                                                    {
+                                                        approvedCls = "stage-warning";
+                                                    }
+                                                    else if (approvedVal.Equals("Done", StringComparison.OrdinalIgnoreCase))
+                                                    {
+                                                        approvedCls = "stage-done";
+                                                        approvedIc = "<i class='fa-solid fa-check'></i>";
+                                                    }
+                                                    else if (approvedVal.Equals("Re-Uploaded", StringComparison.OrdinalIgnoreCase) ||
+                                                    approvedVal.Equals("Reuploaded", StringComparison.OrdinalIgnoreCase))
+                                                    {
+                                                        approvedCls = "re-uploaded";
+                                                        approvedIc = "<i class='fa-solid fa-rotate-right'></i>";
+                                                    }
+
+                                                    <div class="store-stage">
+                                                        <div class="circle @approvedCls">@Html.Raw(approvedIc)</div>
+                                                        <div class="label">@approvedLabel</div>
+                                                    </div>
+                                                }
+                                                @{
+                                                    // -------- OCR Stage (original logic preserved) -----------
+                                                    var ocrVal = (row.OCR ?? "").Trim();
+                                                    var ocrCls = "stage-pending";
+                                                    var ocrIc = "<i class='fa-regular fa-clock'></i>";
+                                                    // Next stage yellow: if Approved Done & OCR Pending
+                                                    if (approvedVal.Equals("Done", StringComparison.OrdinalIgnoreCase)
+                                                    && ocrVal.Equals("Pending", StringComparison.OrdinalIgnoreCase))
+                                                    {
+                                                        ocrCls = "stage-warning";
+                                                    }
+                                                    else if (ocrVal.Equals("Done", StringComparison.OrdinalIgnoreCase))
+                                                    {
+                                                        ocrCls = "stage-done";
+                                                        ocrIc = "<i class='fa-solid fa-check'></i>";
+                                                    }
+                                                    else if (ocrVal.Equals("Rejected", StringComparison.OrdinalIgnoreCase))
+                                                    {
+                                                        ocrCls = "stage-rejected";
+                                                        ocrIc = "<i class='fa-solid fa-xmark'></i>";
+                                                    }
+                                                    else if (ocrVal.Equals("Re-Uploaded", StringComparison.OrdinalIgnoreCase) ||
+                                                    ocrVal.Equals("Reuploaded", StringComparison.OrdinalIgnoreCase))
+                                                    {
+                                                        ocrCls = "re-uploaded";
+                                                        ocrIc = "<i class='fa-solid fa-rotate-right'></i>";
+                                                    }
+                                                }
+                                                <div class="store-stage">
+                                                    <div class="circle @ocrCls">@Html.Raw(ocrIc)</div>
+                                                    <div class="label">OCR</div>
+                                                </div>
+
+                                                @{
+                                                    // -------- SAPPush Stage (original logic preserved) -----------
+                                                    var sapVal = (row.SAPPush ?? "").Trim();
+                                                    var sapCls = "stage-pending";
+                                                    var sapIc = "<i class='fa-regular fa-clock'></i>";
+                                                    // Next stage yellow: if OCR Done & SAPPush Pending
+                                                    if (ocrVal.Equals("Done", StringComparison.OrdinalIgnoreCase)
+                                                    && sapVal.Equals("Pending", StringComparison.OrdinalIgnoreCase))
+                                                    {
+                                                        sapCls = "stage-warning";
+                                                    }
+                                                    else if (sapVal.Equals("Done", StringComparison.OrdinalIgnoreCase))
+                                                    {
+                                                        sapCls = "stage-done";
+                                                        sapIc = "<i class='fa-solid fa-check'></i>";
+                                                    }
+                                                    else if (sapVal.Equals("Rejected", StringComparison.OrdinalIgnoreCase))
+                                                    {
+                                                        sapCls = "stage-rejected";
+                                                        sapIc = "<i class='fa-solid fa-xmark'></i>";
+                                                    }
+                                                    else if (sapVal.Equals("Re-Uploaded", StringComparison.OrdinalIgnoreCase) ||
+                                                    sapVal.Equals("Reuploaded", StringComparison.OrdinalIgnoreCase))
+                                                    {
+                                                        sapCls = "re-uploaded";
+                                                        sapIc = "<i class='fa-solid fa-rotate-right'></i>";
+                                                    }
+                                                }
+                                                <div class="store-stage">
+                                                    <div class="circle @sapCls">@Html.Raw(sapIc)</div>
+                                                    <div class="label">SAPPush</div>
+                                                </div>
+                                            </div>
+                                        </td>
+
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+
+                    </table>
+
+                    <!-- Pagination controls (client-side) - right aligned -->
+                    <nav id="pagination" aria-label="Table pagination" class="d-flex justify-content-end py-2" style="display:none;">
+                        <ul class="pagination mb-0">
+                            <!-- JS will populate -->
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+
+            <div class="modal fade" id="pdfModal" tabindex="-1" aria-labelledby="pdfModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-xl modal-dialog-centered" style="max-width:95%;">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="pdfModalLabel">Invoice PDF</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body p-0">
+                            <iframe id="pdfFrame" style="width:100%; height:75vh; border:0;"></iframe>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-datepicker@1.10.0/dist/css/bootstrap-datepicker.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap-datepicker@1.10.0/dist/js/bootstrap-datepicker.min.js"></script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const pdfModalEl = document.getElementById('pdfModal');
+            const pdfModal = new bootstrap.Modal(pdfModalEl);
+            const pdfFrame = document.getElementById('pdfFrame');
+            const modalTitle = document.getElementById('pdfModalLabel');
+
+            // Helper to open modal with given url and title
+            function openPdfInModal(url, title) {
+                if (!url) {
+                    alert("No PDF link available.");
+                    return;
+                }
+
+                modalTitle.textContent = title || 'Invoice';
+                // prefer using the full url as-is
+                pdfFrame.src = url;
+                pdfModal.show();
+            }
+
+            // S3 links
+            document.querySelectorAll('.open-pdf-link').forEach(link => {
+                link.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const pdfUrl = this.dataset.s3;
+                    const invoiceName = this.dataset.name || this.textContent.trim();
+                    if (!pdfUrl) {
+                        alert("No S3 link available for this invoice.");
+                        return;
+                    }
+                    openPdfInModal(pdfUrl, invoiceName);
+                });
+            });
+
+            // Local files
+            document.querySelectorAll('.previewBtn').forEach(link => {
+                link.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    // Use data-local-url which was generated by Url.Content()
+                    const localUrl = this.dataset.localUrl || this.dataset.invoice;
+                    const invoiceName = this.dataset.invoice || this.textContent.trim();
+
+                    if (!localUrl) {
+                        alert("No local URL available for this invoice.");
+                        return;
+                    }
+
+                    openPdfInModal(localUrl, invoiceName);
+                });
+            });
+
+            // Clear iframe when modal is hidden (release memory and stop audio)
+            pdfModalEl.addEventListener('hidden.bs.modal', function () {
+                pdfFrame.src = "about:blank";
+            });
+
+            // Optional: if iframe fails to load PDF (e.g., browser blocks), offer to open in new tab
+            pdfFrame.addEventListener('error', function () {
+                if (confirm("Unable to display PDF in modal. Open in new tab instead?")) {
+                    window.open(pdfFrame.src, '_blank');
+                }
+            });
+        });
+    </script>
+
+    <script>
+        (function () {
+            var successMessage = @Html.Raw(JsonSerializer.Serialize(TempData["SuccessMessage"] ?? ""));
+            if (successMessage) {
+                Swal.fire({ icon: 'success', title: 'Success', text: successMessage });
+            }
+        })();
+    </script>
+
+    <!-- BEGIN: Client-side pagination script (10 rows per page) -->
+    <script>
+        (function () {
+            const rowsPerPage = 10;
+            const table = document.getElementById('storeTable');
+            if (!table) return;
+
+            const tbody = table.tBodies[0];
+            if (!tbody) return;
+
+            const rows = Array.from(tbody.querySelectorAll('tr'));
+            const totalRows = rows.length;
+            const paginationNav = document.getElementById('pagination');
+            const paginationList = paginationNav ? paginationNav.querySelector('.pagination') : null;
+
+            // If no rows or less than/equal to rowsPerPage, hide pagination and show all rows
+            if (totalRows === 0) {
+                if (paginationNav) paginationNav.style.display = 'none';
+                return;
+            }
+
+            const totalPages = Math.max(1, Math.ceil(totalRows / rowsPerPage));
+
+            function showPage(page) {
+                // clamp page
+                const p = Math.min(Math.max(1, page), totalPages);
+
+                const start = (p - 1) * rowsPerPage;
+                const end = start + rowsPerPage;
+
+                rows.forEach((r, idx) => {
+                    r.style.display = (idx >= start && idx < end) ? '' : 'none';
+                });
+
+                // update active class on pagination
+                if (paginationList) {
+                    Array.from(paginationList.querySelectorAll('li.page-item')).forEach(li => li.classList.remove('active'));
+                    const activeLi = paginationList.querySelector('li.page-item[data-page="' + p + '"]');
+                    if (activeLi) activeLi.classList.add('active');
+                }
+            }
+
+            function buildPagination() {
+                if (!paginationList) return;
+                paginationList.innerHTML = '';
+
+                // Prev
+                const prevLi = document.createElement('li');
+                prevLi.className = 'page-item';
+                prevLi.innerHTML = '<button class="page-link" type="button" aria-label="Previous">&laquo;</button>';
+                prevLi.addEventListener('click', () => {
+                    const current = getCurrentPage();
+                    if (current > 1) showPage(current - 1);
+                });
+                paginationList.appendChild(prevLi);
+
+                // Page numbers: if many pages, show truncated range
+                const maxPagesToShow = 7; // adjust if needed
+                let startPage = 1;
+                let endPage = totalPages;
+
+                if (totalPages > maxPagesToShow) {
+                    // show first (maxPagesToShow) pages, plus ellipsis + last page
+                    endPage = maxPagesToShow;
+                }
+
+                for (let i = startPage; i <= endPage; i++) {
+                    const li = document.createElement('li');
+                    li.className = 'page-item';
+                    li.setAttribute('data-page', i);
+                    li.innerHTML = '<button class="page-link" type="button">' + i + '</button>';
+                    li.addEventListener('click', function () {
+                        const p = parseInt(this.getAttribute('data-page'), 10);
+                        showPage(p);
+                    });
+                    paginationList.appendChild(li);
+                }
+
+                // If totalPages > maxPagesToShow, append ellipsis + last page
+                if (totalPages > maxPagesToShow) {
+                    const ellipsisLi = document.createElement('li');
+                    ellipsisLi.className = 'page-item disabled';
+                    ellipsisLi.innerHTML = '<span class="page-link">…</span>';
+                    paginationList.appendChild(ellipsisLi);
+
+                    const lastLi = document.createElement('li');
+                    lastLi.className = 'page-item';
+                    lastLi.setAttribute('data-page', totalPages);
+                    lastLi.innerHTML = '<button class="page-link" type="button">' + totalPages + '</button>';
+                    lastLi.addEventListener('click', function () {
+                        const p = parseInt(this.getAttribute('data-page'), 10);
+                        showPage(p);
+                    });
+                    paginationList.appendChild(lastLi);
+                }
+
+                // Next
+                const nextLi = document.createElement('li');
+                nextLi.className = 'page-item';
+                nextLi.innerHTML = '<button class="page-link" type="button" aria-label="Next">&raquo;</button>';
+                nextLi.addEventListener('click', () => {
+                    const current = getCurrentPage();
+                    if (current < totalPages) showPage(current + 1);
+                });
+                paginationList.appendChild(nextLi);
+            }
+
+            function getCurrentPage() {
+                if (!paginationList) return 1;
+                const active = paginationList.querySelector('li.page-item.active');
+                if (!active) return 1;
+                const p = parseInt(active.getAttribute('data-page'), 10);
+                return isNaN(p) ? 1 : p;
+            }
+
+            // initialize
+            buildPagination();
+            if (paginationNav) paginationNav.style.display = totalPages > 1 ? '' : 'none';
+            showPage(1);
+
+            // Accessibility: keyboard support for pagination buttons (delegated)
+            if (paginationList) {
+                paginationList.addEventListener('keydown', function (e) {
+                    if (e.key === 'Enter' && e.target && e.target.matches('button.page-link')) {
+                        e.target.click();
+                    }
+                });
+            }
+
+        })();
+    </script>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-datepicker@1.10.0/dist/css/bootstrap-datepicker.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap-datepicker@1.10.0/dist/js/bootstrap-datepicker.min.js"></script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const pdfModal = new bootstrap.Modal(document.getElementById('pdfModal'));
+            const pdfFrame = document.getElementById('pdfFrame');
+            const modalTitle = document.getElementById('pdfModalLabel');
+
+            // Handle click on invoice name to open modal
+            document.querySelectorAll('.open-pdf-link').forEach(link => {
+                link.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const pdfUrl = this.dataset.s3;
+                    const invoiceName = this.dataset.name;
+
+                    if (!pdfUrl) {
+                        alert("No S3 link available for this invoice.");
+                        return;
+                    }
+
+                    modalTitle.textContent = invoiceName;
+                    pdfFrame.src = pdfUrl;
+                    pdfModal.show();
+                });
+            });
+
+            // Clear iframe when modal is closed
+            document.getElementById('pdfModal').addEventListener('hidden.bs.modal', function () {
+                pdfFrame.src = "about:blank";
+            });
+        });
+    </script>
+
+
+    <script>
+        $(document).ready(function () {
+
+            // ✅ Initialize DataTable
+            var table = $('#invoiceTable').DataTable({
+                orderCellsTop: true,
+                fixedHeader: true,
+                pageLength: 10,
+                lengthMenu: [5, 10, 25, 50],
+                language: {
+                    search: "",
+                    searchPlaceholder: "Search all columns..."
+                }
+            });
+
+            // ✅ Initialize Bootstrap Datepicker for date filter
+            $('.datepicker').datepicker({
+                format: 'dd-mm-yyyy',
+                autoclose: true,
+                todayHighlight: true,
+                clearBtn: true
+            });
+
+            // ✅ Apply column-specific search filters
+            $('#invoiceTable thead tr.filters th').each(function (i) {
+                $('input', this).on('keyup change', function () {
+                    if (table.column(i).search() !== this.value) {
+                        table.column(i).search(this.value).draw();
+                    }
+                });
+            });
+
+            // ✅ Special handling for DatePicker filter
+            $('.datepicker').on('change', function () {
+                var dateValue = this.value;
+                table.column(2) // Assuming 3rd column = Insert Date
+                    .search(dateValue ? dateValue : '', true, false)
+                    .draw();
+            });
+
+
+                   
+            // Page Load — hide table & no active
+            $('.status-card').removeClass('active');
+            $('#invoiceTableWrapper').hide();
+            table.column(4).search("").draw();
+            
+            // Click Event
+            $('.status-card').on('click', function () {
+            
+                // If card already active → hide table + remove active
+                if ($(this).hasClass('active')) {
+                    $(this).removeClass('active');
+                    $('#invoiceTableWrapper').hide();
+                    table.column(4).search("").draw();
+                    return;
+                }
+            
+                // Otherwise → activate card & show table
+                $('.status-card').removeClass('active'); // remove old selection
+                $(this).addClass('active');
+            
+                var statusText = $(this).data('status');
+            
+                $('#invoiceTableWrapper').show();        // show table
+                table.column(4).search(statusText).draw(); // filter
+            });
+
+
+    });
+
+        
+    </script>
+
+
+}

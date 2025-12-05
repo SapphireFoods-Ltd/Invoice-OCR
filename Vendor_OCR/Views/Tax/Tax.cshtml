@@ -1,0 +1,425 @@
+﻿@{
+    ViewData["Title"] = "Tax";
+}
+
+<style>
+    .align-items-end {
+        display: flex !important;
+        align-items: center !important;
+    }
+
+    .field-validation-error {
+        font-size: 0.8rem;
+        color: red;
+        margin-top: 0.25rem;
+    }
+
+    .card-header {
+        font-weight: 600;
+        font-size: 1rem;
+    }
+
+    .text-danger,
+    .field-validation-valid {
+        /*   display: block; */
+        min-height: 1.25em;
+        font-size: 0.875em;
+        margin-top: 0.25rem;
+    }
+
+</style>
+
+
+
+<style>
+    .required-label::after {
+        content: " *";
+        color: red;
+    }
+</style>
+
+<div class="container mt-5">
+    <div class="card shadow-lg border-0">
+        <div class="card-body">
+            <h3 class="mb-4 text-primary fw-semibold text-center">Vendor Registration</h3>
+
+            <form asp-action="Register" method="post" id="registerForm" enctype="multipart/form-data">
+
+                <!-- Business Details -->
+                <div class="card mb-4 border-0 shadow-sm">
+                    <div class="card-header bg-light fw-semibold">Business Details</div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-3">
+                                <label class="form-label fw-semibold">Store Name</label>
+                                <input name="StoreName" id="StoreName" class="form-control bg-light text-dark shadow-sm" value="My Store" readonly />
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label fw-semibold">Category</label>
+                                <input name="Category" id="Category" class="form-control bg-light text-dark shadow-sm" value="Manufacturer" readonly />
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label fw-semibold">Business Area</label>
+                                <input name="BusinessArea" id="BusinessArea" class="form-control bg-light text-dark shadow-sm" value="Retail" readonly />
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label fw-semibold">Vendor Group</label>
+                                <input name="VendorGroup" id="VendorGroup" class="form-control bg-light text-dark shadow-sm" value="Group A" readonly />
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label fw-semibold">Company Code</label>
+                                <input name="CompanyCode" id="CompanyCode" class="form-control bg-light text-dark shadow-sm" value="1000" readonly />
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label fw-semibold">Role</label>
+                                <input name="Role" id="Role" class="form-control bg-light text-dark shadow-sm" placeholder="Auto-filled" value="Vendor" readonly />
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label fw-semibold">Purchase Org</label>
+                                <input name="PurchaseOrg" id="PurchaseOrg" class="form-control bg-light text-dark shadow-sm" placeholder="Auto-filled" value="PO123" readonly />
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label fw-semibold">Search Term</label>
+                                <input name="SearchTerm" id="SearchTerm" class="form-control bg-light text-dark shadow-sm" placeholder="Auto-filled" value="Retail Vendor" readonly />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Payment Details -->
+                <div class="card mb-4 border-0 shadow-sm">
+                    <div class="card-header bg-light fw-semibold">Payment Details</div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Terms of Payment</label>
+                                <input type="text" class="form-control shadow-sm bg-light" readonly />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Payment Method</label>
+                                <input type="text" class="form-control shadow-sm bg-light" readonly />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Order Currency</label>
+                                <input type="text" class="form-control shadow-sm bg-light" readonly />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
+
+               @*  <div class="card mb-4 border-0 shadow-sm">
+                    <div class="card-header bg-light fw-semibold">Attachments</div>
+                    <div class="card-body">
+                        <div class="row g-3">
+
+                            <!-- Aadhar Card -->
+                            <div class="col-md-4">
+                                <label asp-for="AadharFile" class="form-label fw-semibold required-label">Aadhar Card</label>
+                                <input asp-for="AadharFile" type="file" class="form-control shadow-sm file-input"
+                                       accept=".png,.jpg,.jpeg,.pdf"
+                                       data-existing="@Model.ExistAadharFile"
+                                       data-val-fileRequiredIfNoExisting="true" />
+                                <input type="hidden" name="ExistAadharFile" id="ExistAadharFile" value="@Model.ExistAadharFile" />
+                                <span class="text-success small file-name-display" style="display:none;"></span>
+                                <span class="text-danger small" asp-validation-for="AadharFile"></span>
+                            </div>
+
+                            <!-- PAN Card -->
+                            <div class="col-md-4">
+                                <label asp-for="PanFile" class="form-label fw-semibold required-label">PAN Card</label>
+                                <input asp-for="PanFile" type="file" class="form-control shadow-sm file-input"
+                                       accept=".png,.jpg,.jpeg,.pdf"
+                                       data-existing="@Model.ExistPanFile"
+                                       data-val-fileRequiredIfNoExisting="true" />
+                                <input type="hidden" name="ExistPanFile" id="ExistPanFile" value="@Model.ExistPanFile" />
+                                <span class="text-success small file-name-display" style="display:none;"></span>
+                                <span class="text-danger small" asp-validation-for="PanFile"></span>
+                            </div>
+
+                            <!-- Bank Statement -->
+                            <div class="col-md-4">
+                                <label asp-for="BankStatementFile" class="form-label fw-semibold required-label">Bank Statement / Passbook</label>
+                                <input asp-for="BankStatementFile" type="file" class="form-control shadow-sm file-input"
+                                       accept=".png,.jpg,.jpeg,.pdf"
+                                       data-existing="@Model.ExistBankStatementFile"
+                                       data-val-fileRequiredIfNoExisting="true" />
+                                <input type="hidden" name="ExistBankStatementFile" id="ExistBankStatementFile" value="@Model.ExistBankStatementFile" />
+                                <span class="text-success small file-name-display" style="display:none;"></span>
+                                <span class="text-danger small" asp-validation-for="BankStatementFile"></span>
+                            </div>
+
+                            <!-- Contract / LOI -->
+                            <div class="col-md-4">
+                                <label asp-for="ContractFile" class="form-label fw-semibold required-label">Contract / LOI</label>
+                                <input asp-for="ContractFile" type="file" class="form-control shadow-sm file-input"
+                                       accept=".png,.jpg,.jpeg,.pdf"
+                                       data-existing="@Model.ExistContractFile"
+                                       data-val-fileRequiredIfNoExisting="true" />
+                                <input type="hidden" name="ExistContractFile" id="ExistContractFile" value="@Model.ExistContractFile" />
+                                <span class="text-success small file-name-display" style="display:none;"></span>
+                                <span class="text-danger small" asp-validation-for="ContractFile"></span>
+                            </div>
+
+                            <!-- GST Certificate -->
+                            <div class="col-md-4">
+                                <label asp-for="GstCertificateFile" class="form-label fw-semibold required-label">GST Certificate</label>
+                                <input asp-for="GstCertificateFile" type="file" class="form-control shadow-sm file-input"
+                                       accept=".png,.jpg,.jpeg,.pdf"
+                                       data-existing="@Model.ExistGstCertificateFile"
+                                       data-val-fileRequiredIfNoExisting="true" />
+                                <input type="hidden" name="ExistGstCertificateFile" id="ExistGstCertificateFile" value="@Model.ExistGstCertificateFile" />
+                                <span class="text-success small file-name-display" style="display:none;"></span>
+                                <span class="text-danger small" asp-validation-for="GstCertificateFile"></span>
+                            </div>
+
+                            <!-- MSME Certificate -->
+                            <div class="col-md-4">
+                                <label asp-for="MsmeCertificateFile" class="form-label fw-semibold required-label">MSME Certificate</label>
+                                <input asp-for="MsmeCertificateFile" type="file" class="form-control shadow-sm file-input"
+                                       accept=".png,.jpg,.jpeg,.pdf"
+                                       data-existing="@Model.ExistMsmeCertificateFile"
+                                       data-val-fileRequiredIfNoExisting="true" />
+                                <input type="hidden" name="ExistMsmeCertificateFile" id="ExistMsmeCertificateFile" value="@Model.ExistMsmeCertificateFile" />
+                                <span class="text-success small file-name-display" style="display:none;"></span>
+                                <span class="text-danger small" asp-validation-for="MsmeCertificateFile"></span>
+                            </div>
+
+                            <!-- Lower Tax Certificate -->
+                            <div class="col-md-4">
+                                <label asp-for="LowerTaxCertificateFile" class="form-label fw-semibold required-label">Lower Tax Deduction Certificate</label>
+                                <input asp-for="LowerTaxCertificateFile" type="file" class="form-control shadow-sm file-input"
+                                       accept=".png,.jpg,.jpeg,.pdf"
+                                       data-existing="@Model.ExistLowerTaxCertificateFile"
+                                       data-val-fileRequiredIfNoExisting="true" />
+                                <input type="hidden" name="ExistLowerTaxCertificateFile" id="ExistLowerTaxCertificateFile" value="@Model.ExistLowerTaxCertificateFile" />
+                                <span class="text-success small file-name-display" style="display:none;"></span>
+                                <span class="text-danger small" asp-validation-for="LowerTaxCertificateFile"></span>
+                            </div>
+
+                            <!-- Certificate of Incorporation -->
+                            <div class="col-md-4">
+                                <label asp-for="CertificateOfIncorporationFile" class="form-label fw-semibold required-label">Certificate of Incorporation</label>
+                                <input asp-for="CertificateOfIncorporationFile" type="file" class="form-control shadow-sm file-input"
+                                       accept=".png,.jpg,.jpeg,.pdf"
+                                       data-existing="@Model.ExistCertificateOfIncorporationFile"
+                                       data-val-fileRequiredIfNoExisting="true" />
+                                <input type="hidden" name="ExistCertificateOfIncorporationFile" id="ExistCertificateOfIncorporationFile" value="@Model.ExistCertificateOfIncorporationFile" />
+                                <span class="text-success small file-name-display" style="display:none;"></span>
+                                <span class="text-danger small" asp-validation-for="CertificateOfIncorporationFile"></span>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+
+                <div id="restOfForm" style="display: none;">
+                    <!-- Vendor Details -->
+                    <div class="card mb-4 border-0 shadow-sm">
+                        <div class="card-header bg-light fw-semibold">Vendor Details</div>
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-md-3">
+                                    <label asp-for="CompanyName" class="form-label fw-semibold required-label">Company's Name</label>
+                                    <input asp-for="CompanyName" class="form-control shadow-sm" />
+                                    <span class="text-danger small"></span>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label fw-semibold">Company's Name</label>
+                                    <input type="text" class="form-control shadow-sm bg-light" readonly />
+                                </div>
+                                <div class="col-md-3">
+                                    <label asp-for="ProprietorName" class="form-label fw-semibold">Proprietor's Name</label>
+                                    <input asp-for="ProprietorName" class="form-control shadow-sm" />
+                                    <span class="text-danger small"></span>
+                                </div>
+                                <div class="col-md-3">
+                                    <label asp-for="PartnershipName" class="form-label fw-semibold">Partnership's Name</label>
+                                    <input asp-for="PartnershipName" class="form-control shadow-sm" />
+                                    <span class="text-danger small"></span>
+                                </div>
+                                <div class="col-md-3">
+                                    <label asp-for="MobileNumber" class="form-label fw-semibold required-label">Mobile No.</label>
+                                    <input asp-for="MobileNumber" class="form-control shadow-sm" />
+                                    <span class="text-danger small"></span>
+                                </div>
+                                <div class="col-md-3">
+                                    <label asp-for="Email" class="form-label fw-semibold required-label">Email</label>
+                                    <input asp-for="Email" class="form-control bg-light text-dark shadow-sm" readonly />
+                                    <span class="text-danger small"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Address -->
+                    <div class="card mb-4 border-0 shadow-sm">
+                        <div class="card-header bg-light fw-semibold">Address</div>
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-md-3">
+                                    <label asp-for="Building" class="form-label fw-semibold required-label">Building</label>
+                                    <input asp-for="Building" class="form-control shadow-sm" />
+                                    <span class="text-danger small"></span>
+                                </div>
+                                <div class="col-md-3">
+                                    <label asp-for="Street1" class="form-label fw-semibold required-label">Street 1</label>
+                                    <input asp-for="Street1" class="form-control shadow-sm" />
+                                    <span class="text-danger small"></span>
+                                </div>
+                                <div class="col-md-3">
+                                    <label asp-for="Street2" class="form-label fw-semibold">Street 2(Optional)</label>
+                                    <input asp-for="Street2" class="form-control shadow-sm" />
+                                </div>
+                                <div class="col-md-3">
+                                    <label asp-for="City" class="form-label fw-semibold required-label">City</label>
+                                    <input asp-for="City" class="form-control shadow-sm" />
+                                    <span class="text-danger small"></span>
+                                </div>
+                                <div class="col-md-3">
+                                    <label asp-for="PostalCode" class="form-label fw-semibold required-label">Postal Code</label>
+                                    <input asp-for="PostalCode" class="form-control shadow-sm" />
+                                    <span class="text-danger small"></span>
+                                </div>
+                                <div class="col-md-3">
+                                    <label asp-for="State" class="form-label fw-semibold required-label">State</label>
+                                    <input asp-for="State" class="form-control shadow-sm" />
+                                    <span class="text-danger small"></span>
+                                </div>
+                                <div class="col-md-3">
+                                    <label asp-for="Country" class="form-label fw-semibold required-label">Country</label>
+                                    <select asp-for="Country" class="form-select shadow-sm">
+                                        <option value="">Select</option>
+                                        <option value="IN" selected>India</option>
+                                    </select>
+                                    <span class="text-danger small"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bank Account Details -->
+                    <div class="card mb-4 border-0 shadow-sm">
+                        <div class="card-header bg-light fw-semibold">Bank Account Details</div>
+                        <div class="card-body" id="bankAccounts">
+                            @for (int i = 0; i < Model.BankAccounts.Count; i++)
+                            {
+                                <div class="row g-3 bank-row align-items-end mb-2" data-index="@i">
+                                    <div class="col-md-2">
+                                        <label asp-for="BankAccounts[i].IFSC" class="form-label fw-semibold required-label">IFSC</label>
+                                        <input asp-for="BankAccounts[i].IFSC" class="form-control shadow-sm" />
+                                        <span class="text-danger small"></span>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label asp-for="BankAccounts[i].AccountNumber" class="form-label fw-semibold required-label">Account No</label>
+                                        <input asp-for="BankAccounts[i].AccountNumber" class="form-control shadow-sm" />
+                                        <span class="text-danger small"></span>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label asp-for="BankAccounts[i].AccountHolderName" class="form-label fw-semibold required-label">Holder Name</label>
+                                        <input asp-for="BankAccounts[i].AccountHolderName" class="form-control shadow-sm" />
+                                        <span class="text-danger small"></span>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label asp-for="BankAccounts[i].BankName" class="form-label fw-semibold required-label">Bank Name</label>
+                                        <input asp-for="BankAccounts[i].BankName" class="form-control shadow-sm" />
+                                        <span class="text-danger small"></span>
+                                    </div>
+                                    <div class="col-md-1 d-flex justify-content-end">
+                                        <button type="button" class="btn btn-outline-danger btn-sm remove-row rounded-circle" title="Remove" style="display:none">&#x2715;</button>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                    <!-- Documents Details -->
+                    <div class="card mb-4 border-0 shadow-sm">
+                        <div class="card-header bg-light fw-semibold">Documents Details</div>
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-md-3">
+                                    <label asp-for="AadharNo" class="form-label fw-semibold required-label">Aadhar No.</label>
+                                    <input asp-for="AadharNo" class="form-control shadow-sm" />
+                                    <span class="text-danger small"></span>
+                                </div>
+                                <div class="col-md-3">
+                                    <label asp-for="PanNo" class="form-label fw-semibold required-label">PAN No.</label>
+                                    <input asp-for="PanNo" class="form-control shadow-sm" />
+                                    <span class="text-danger small"></span>
+                                </div>
+                                <div class="col-md-3">
+                                    <label asp-for="GstNo" class="form-label fw-semibold required-label">GST No.</label>
+                                    <input asp-for="GstNo" class="form-control shadow-sm" />
+                                    <span class="text-danger small"></span>
+                                </div>
+                                <div class="col-md-3">
+                                    <label asp-for="NatureOfExpense" class="form-label fw-semibold required-label">Nature of Expense</label>
+                                    <textarea asp-for="NatureOfExpense" class="form-control shadow-sm" rows="1" maxlength="45"></textarea>
+                                    <span class="text-danger small"></span>
+                                </div>
+                                <div class="col-md-3 d-flex align-items-center">
+                                    <div class="form-check form-switch ms-1">
+                                        <input asp-for="IsMSME" class="form-check-input" type="checkbox" />
+                                        <label asp-for="IsMSME" class="form-check-label fw-semibold">MSME</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <label asp-for="MSMENo" class="form-label fw-semibold">MSME Registration No.</label>
+                                    <input asp-for="MSMENo" class="form-control shadow-sm" />
+                                    <span class="text-danger small"></span>
+                                </div>
+
+                                <div class="col-md-3 d-flex align-items-center">
+                                    <div class="form-check form-switch ms-1">
+                                        <input asp-for="HasLowerTaxDeduction" class="form-check-input" type="checkbox" />
+                                        <label asp-for="HasLowerTaxDeduction" class="form-check-label fw-semibold">Lower Tax Deduction</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <label asp-for="LowerTaxCertNo" class="form-label fw-semibold">Lower Tax Deduction Certificate No.</label>
+                                    <input asp-for="LowerTaxCertNo" class="form-control shadow-sm" />
+                                    <span class="text-danger small"></span>
+                                </div>
+                                <div class="col-md-3">
+                                    <label asp-for="ReconciliationAccount" class="form-label fw-semibold required-label">Reconciliation Account</label>
+                                    <input asp-for="ReconciliationAccount" class="form-control shadow-sm" />
+                                    <span class="text-danger small"></span>
+                                </div>
+                                <div class="col-md-3">
+                                    <label asp-for="CinLlpin" class="form-label fw-semibold">CIN/LLPIN</label>
+                                    <input asp-for="CinLlpin" class="form-control shadow-sm" />
+                                    <span class="text-danger small"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Other Details -->
+                    <div class="card mb-4 border-0 shadow-sm">
+                        <div class="card-header bg-light fw-semibold">Other Details</div>
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label asp-for="Remarks" class="form-label fw-semibold">Remarks/Comments</label>
+                                    <textarea asp-for="Remarks" class="form-control shadow-sm" rows="2"></textarea>
+                                    <span class="text-danger small"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="text-center mt-5">
+                        <button type="button" class="btn btn-primary px-4 py-2 shadow-sm me-2" id="btnSave" disabled>Save</button>
+                        <button type="submit" class="btn btn-success px-5 py-2 shadow-sm" id="btnSubmit" disabled>Submit</button>
+                    </div>
+                </div>
+                <input type="hidden" name="OCR_AadharNo" id="OCR_AadharNo" value="" />
+                <input type="hidden" name="OCR_PanNo" id="OCR_PanNo" value="" />
+                <input type="hidden" name="ActionType" id="ActionType" value="" /> *@
+            </form>
+        </div>
+    </div>
+</div>

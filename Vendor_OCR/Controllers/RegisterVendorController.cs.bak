@@ -1,0 +1,149 @@
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Data.SqlClient;
+using System.Net;
+using System.Net.Mail;
+using System.Reflection;
+using Vendor_OCR.Repositories;
+using Vendor_OCR.Models;
+using static Vendor_OCR.Models.VendorRegisterModel;
+
+namespace Vendor_OCR.Controllers
+{
+  
+    public class RegisterVendorController : Controller
+    {
+        private readonly ILogger<RegisterVendorController> _logger;
+        private readonly VendorRepository _repo;
+        string empCode;
+
+        public RegisterVendorController(IConfiguration config, ILogger<RegisterVendorController> logger)
+        {
+            _repo = new VendorRepository(config);
+            _logger = logger;
+        }
+        public IActionResult RegisterVendor(string vendorEmail, string name)
+        {
+            
+            var model = new VendorRegisterModel
+            {
+                Name = name,
+                Email = vendorEmail
+            };
+            model.BankAccounts.Add(new VendorRegisterModel.BankAccount());
+            return View(model);
+
+        }
+
+
+        [HttpGet]
+        [AllowAnonymous]
+        public IActionResult Activate(string vendorCode)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(vendorCode))
+                    return View("Error", "Invalid activation link.");
+
+                string validationResult = _repo.ValidateVendorCode(vendorCode);
+                HttpContext.Session.SetString("EmpCode", vendorCode);
+
+                switch (validationResult)
+                {
+                    case "Invalid":
+                        return View("Error", "Invalid or expired activation link.");
+
+                    case "AlreadyActivated":
+                        return RedirectToAction("Login", "Login");
+
+                    case "Valid":
+                        var vendor = _repo.GetVendorRequestDetails(vendorCode);
+
+                        if (vendor == null)
+                            return RedirectToAction("Login", "Login");
+
+                        var model = new VendorRegisterModel
+                        {
+                            Name = vendor.Name,
+                            Email = vendor.Email
+                        };
+
+                        return View("~/Views/Vendor/RegisterVendor.cshtml", model);
+
+                    default:
+                        return View("~/Views/Error/Error.cshtml");
+                }
+            }
+            catch (Exception ex)
+            {
+                empCode = HttpContext.Session.GetString("EmpCode");
+                _repo.ErrorLog(ex.Message, empCode);
+
+                return View("~/Views/Error/Error.cshtml");
+            }
+        }
+
+        [HttpPost]
+        [AllowAnonymous]
+        public IActionResult SendOtpToEmail([FromBody] OtpRequest data)
+        {
+            string email = data.Email;
+            string otp = new Random().Next(100000, 999999).ToString();
+
+            try
+            {
+                using (var smtp = new SmtpClient("smtp.office365.com", 587))
+                {
+                    smtp.Credentials = new NetworkCredential("sfil.supports@sapphirefoods.in", "khgfWcQ@42*4!&1212");
+                    smtp.EnableSsl = true;
+
+                    var mail = new MailMessage();
+                    mail.From = new MailAddress("sfil.supports@sapphirefoods.in", " Sapphire Foods Vendor Portal");
+                    mail.To.Add(email);
+                    mail.Subject = "Your OTP Code";
+                    mail.Body = $"Your OTP for registration is: {otp}";
+                    mail.IsBodyHtml = false;
+                    smtp.Send(mail);
+                }
+
+                return Json(new { status = "Success", otp = otp });
+            }
+            catch (Exception ex)
+            {
+                empCode = HttpContext.Session.GetString("EmpCode");
+                _repo.ErrorLog(ex.Message, empCode);
+                return Json(new { status = "Error", message = ex.Message });
+            }
+        }
+
+        [HttpPost]
+        [AllowAnonymous]
+        public IActionResult RegisterVendor(VendorRegisterModel model)
+        {
+            
+            return Json(new { status = "Success", message = "Vendor registered successfully!" });
+        }
+
+
+
+        [HttpPost]
+        [AllowAnonymous]
+        public async Task<IActionResult> SaveVendor([FromBody] VendorPassword vendor)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(new { success = false, message = "Invalid input data" });
+
+            bool isSaved = await _repo.SaveVendorAsync(vendor);
+            if (isSaved)
+                return Ok(new { success = true, message = "Vendor registered successfully" });
+            else
+                return StatusCode(500, new { success = false, message = "Failed to save vendor data" });
+        }
+
+    }
+
+    public class OtpRequest
+    {
+        public string Email { get; set; }
+    }
+}

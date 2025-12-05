@@ -1,0 +1,99 @@
+﻿using Microsoft.AspNetCore.Mvc;
+using Vendor_OCR.Models;
+using Vendor_OCR.Repositories;
+
+namespace Vendor_OCR.Controllers
+{
+    public class RegisterController : BaseController
+    {
+        private readonly VendorRepository _vendorRepository;
+
+        public RegisterController(IConfiguration configuration) : base(configuration)
+        {
+            _vendorRepository = new VendorRepository(configuration);
+        }
+
+        [HttpGet]
+        public IActionResult Register(string vendorCode)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(vendorCode))
+                    vendorCode = HttpContext.Session.GetString("Vendor_Code");
+
+                if (string.IsNullOrEmpty(vendorCode))
+                {
+                    TempData["Error"] = "Vendor not found. Please log in again.";
+                    return RedirectToAction("Login");
+                }
+
+                var model = _vendorRepository.GetVendorDetails(vendorCode);
+
+                if (model == null)
+                {
+                    TempData["Error"] = "Vendor data not found.";
+                    return RedirectToAction("Index");
+                }
+
+                return View(model);
+            }
+            catch (Exception ex)
+            {
+                LogErrorToDB(ex, "RegisterController - Register (GET)");
+                return RedirectToAction("Error", "Home");
+            }
+        }
+
+        [HttpPost]
+        public IActionResult Register(RegisterModel model, string ActionType)
+        {
+            try
+            {
+                if (ActionType != "Save")
+                {
+                    if (!ModelState.IsValid)
+                        return View(model);
+                }
+
+                var vendorId = HttpContext.Session.GetString("Vendor_Code");
+                if (string.IsNullOrEmpty(vendorId))
+                    return RedirectToAction("Login");
+
+                // Handle file uploads
+                string uploadDir = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Vendor_Doc");
+                Directory.CreateDirectory(uploadDir);
+
+                string SaveFile(IFormFile file, string vendorId)
+                {
+                    if (file == null || file.Length == 0) return null;
+                    string fileName = $"{Path.GetFileNameWithoutExtension(file.FileName)}_{vendorId}_{DateTime.Now:ddMMyyyy}{Path.GetExtension(file.FileName)}";
+                    string filePath = Path.Combine(uploadDir, fileName);
+                    using (var stream = new FileStream(filePath, FileMode.Create)) file.CopyTo(stream);
+                    return fileName;
+                }
+
+                model.ExistPanFile = model.PanFile != null ? SaveFile(model.PanFile, vendorId) : model.ExistPanFile;
+                model.ExistAadharFile = model.AadharFile != null ? SaveFile(model.AadharFile, vendorId) : model.ExistAadharFile;
+                model.ExistBankStatementFile = model.BankStatementFile != null ? SaveFile(model.BankStatementFile, vendorId) : model.ExistBankStatementFile;
+                model.ExistContractFile = model.ContractFile != null ? SaveFile(model.ContractFile, vendorId) : model.ExistContractFile;
+                model.ExistGstCertificateFile = model.GstCertificateFile != null ? SaveFile(model.GstCertificateFile, vendorId) : model.ExistGstCertificateFile;
+                model.ExistMsmeCertificateFile = model.MsmeCertificateFile != null ? SaveFile(model.MsmeCertificateFile, vendorId) : model.ExistMsmeCertificateFile;
+                model.ExistLowerTaxCertificateFile = model.LowerTaxCertificateFile != null ? SaveFile(model.LowerTaxCertificateFile, vendorId) : model.ExistLowerTaxCertificateFile;
+                model.ExistCertificateOfIncorporationFile = model.CertificateOfIncorporationFile != null ? SaveFile(model.CertificateOfIncorporationFile, vendorId) : model.ExistCertificateOfIncorporationFile;
+
+                _vendorRepository.UpdateVendorDetails(model, ActionType, vendorId);
+
+                TempData["SweetAlertIcon"] = "success";
+                TempData["SweetAlertTitle"] = "Success!";
+                TempData["SweetAlertMessage"] = $"Vendor data {(ActionType == "Submit" ? "submitted" : "saved")} successfully!";
+
+                return RedirectToAction("Index", "Home");
+            }
+            catch (Exception ex)
+            {
+                LogErrorToDB(ex, "RegisterController - Register (POST)");
+                return View(model);
+            }
+        }
+    }
+}

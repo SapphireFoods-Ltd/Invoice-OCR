@@ -1,0 +1,488 @@
+﻿@model Vendor_OCR.Models.Invoice.InvoiceDetail
+@{
+    ViewData["Title"] = "Edit Invoice";
+}
+
+<style>
+    #loaderOverlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(255,255,255,0.7);
+        z-index: 9999;
+        display: none;
+    }
+
+    .spinner-border {
+        width: 4rem;
+        height: 4rem;
+    }
+
+    #loaderBox {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+    }
+</style>
+<div class="container mt-5">
+    <div class="card shadow-lg border-0">
+        <div class="card-body">
+            <h3 class="mb-4 text-primary fw-semibold text-center">Update Invoice</h3>
+            <div class="text-end mt-3" style="padding-bottom: 15px;">
+                <button type="button" class="btn btn-outline-info" id="previewBtn">
+                    <i class="bi bi-eye"></i> Invoice
+                </button>
+            </div>
+
+            <form id="invoiceForm" asp-action="UpdateInvoice" method="post" class="needs-validation" novalidate>
+                <input type="hidden" asp-for="Rid" />
+                <div class="card mb-4 border-0 shadow-sm">
+                    <div class="card-header bg-light fw-semibold">Invoice Details</div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Invoice ID</label>
+                                <input asp-for="InvoiceId" class="form-control bg-light text-dark shadow-sm" readonly />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Invoice Type</label>
+                                <input asp-for="InvoiceType" class="form-control bg-light text-dark shadow-sm" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Supplier GSTN</label>
+                                <input asp-for="SupplierGSTN" class="form-control bg-light text-dark shadow-sm" readonly />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Invoice Date</label>
+                                <input asp-for="InvoiceDate" class="form-control bg-light text-dark shadow-sm" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Purchase Order</label>
+                                <input asp-for="PurchaseOrder" class="form-control bg-light text-dark shadow-sm" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Due Date</label>
+                                <input asp-for="DueDate" class="form-control bg-light text-dark shadow-sm" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Vendor Name</label>
+                                <input asp-for="VendorName" class="form-control bg-light text-dark shadow-sm" readonly />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Vendor Address</label>
+                                <input asp-for="VendorAddress" class="form-control bg-light text-dark shadow-sm" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Customer Name</label>
+                                <input asp-for="CustomerName" class="form-control bg-light text-dark shadow-sm" readonly />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Customer Address</label>
+                                <input asp-for="CustomerAddress" class="form-control bg-light text-dark shadow-sm" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Sub Total</label>
+                                <input asp-for="SubTotal" class="form-control bg-light text-dark shadow-sm" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Total Tax</label>
+                                <input asp-for="TotalTax" class="form-control bg-light text-dark shadow-sm" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Invoice Total</label>
+                                <input asp-for="InvoiceTotal" class="form-control bg-light text-dark shadow-sm" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Currency</label>
+                                <input asp-for="Currency" class="form-control bg-light text-dark shadow-sm" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">GRN Number</label>
+                                <input asp-for="GRNNumber" class="form-control bg-light text-dark shadow-sm" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">SES Number</label>
+                                <input asp-for="SESNumber" class="form-control bg-light text-dark shadow-sm" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Supplier Email</label>
+                                <input asp-for="SupplierEmail" class="form-control bg-light text-dark shadow-sm" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Supplier VAT Number</label>
+                                <input asp-for="SupplierVATNumber" class="form-control bg-light text-dark shadow-sm" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Supplier CIN Number</label>
+                                <input asp-for="SupplierCINNumber" class="form-control bg-light text-dark shadow-sm" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Customer GSTN</label>
+                                <input asp-for="CustomerGSTN" class="form-control bg-light text-dark shadow-sm" readonly />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Customer Email</label>
+                                <input asp-for="CustomerEmail" class="form-control bg-light text-dark shadow-sm" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Customer VAT</label>
+                                <input asp-for="CustomerVAT" class="form-control bg-light text-dark shadow-sm" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">CGST (%)</label>
+                                <input asp-for="CGST_P" class="form-control bg-light text-dark shadow-sm" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">CGST Value</label>
+                                <input asp-for="CGST_Value" class="form-control bg-light text-dark shadow-sm" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">SGST (%)</label>
+                                <input asp-for="SGST_P" class="form-control bg-light text-dark shadow-sm" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">SGST Value</label>
+                                <input asp-for="SGST_Value" class="form-control bg-light text-dark shadow-sm" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">IGST (%)</label>
+                                <input asp-for="IGST_P" class="form-control bg-light text-dark shadow-sm" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">IGST Value</label>
+                                <input asp-for="IGST_Value" class="form-control bg-light text-dark shadow-sm" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">VAT (%)</label>
+                                <input asp-for="VAT_P" class="form-control bg-light text-dark shadow-sm" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">VAT Value</label>
+                                <input asp-for="VAT_Value" class="form-control bg-light text-dark shadow-sm" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Freight</label>
+                                <input asp-for="Freight" class="form-control bg-light text-dark shadow-sm" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Insurance</label>
+                                <input asp-for="Insurance" class="form-control bg-light text-dark shadow-sm" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Package</label>
+                                <input asp-for="Package" class="form-control bg-light text-dark shadow-sm" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Loading Charges</label>
+                                <input asp-for="LoadingCharges" class="form-control bg-light text-dark shadow-sm" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Customer No</label>
+                                <input asp-for="CustomerNo" class="form-control bg-light text-dark shadow-sm" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">PAN Number</label>
+                                <input asp-for="PanNumber" class="form-control bg-light text-dark shadow-sm" />
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+                <div class="card mb-4 border-0 shadow-sm">
+                    <div class="card-header bg-light fw-semibold">Invoice Sub Details</div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <table class="table table-bordered table-sm" id="subItemTable">
+                                <thead>
+
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Product Code</th>
+                                        <th>Description</th>
+                                        <th>Unit</th>
+                                        <th>Qty</th>
+                                        <th>Unit Price</th>
+
+                                        <th>Amount</th>
+                                        <th>CGST %</th>
+                                        <th>CGST Value</th>
+                                        <th>SGST %</th>
+                                        <th>SGST Value</th>
+                                        <th>IGST %</th>
+                                        <th>IGST Value</th>
+                                        <th>Taxable Value</th>
+
+                                        <th>Delete</th>
+                                    </tr>
+                                </thead>
+
+                                <tbody>
+                                    @for (int i = 0; i < Model.SubItems.Count; i++)
+                                    {
+                                        <tr class="subItemRow">
+                                            <td class="rowIndex">@(i + 1)</td>
+
+                                            <input asp-for="SubItems[i].Rid" type="hidden" />
+                                            <input asp-for="SubItems[i].InvoiceDetailsId" type="hidden" />
+
+                                            <td><input class="form-control bg-light shadow-sm" asp-for="SubItems[i].ProductCode" /></td>
+                                            <td><input class="form-control bg-light shadow-sm" asp-for="SubItems[i].Description" /></td>
+                                            <td><input class="form-control bg-light shadow-sm" asp-for="SubItems[i].Unit" /></td>
+                                            <td><input class="form-control bg-light shadow-sm" asp-for="SubItems[i].Quantity" /></td>
+                                            <td><input class="form-control bg-light shadow-sm" asp-for="SubItems[i].UnitPrice" /></td>
+
+                                            <td><input class="form-control bg-light shadow-sm" asp-for="SubItems[i].Amount" /></td>
+                                            <td><input class="form-control bg-light shadow-sm" asp-for="SubItems[i].CGST_PER" /></td>
+                                            <td><input class="form-control bg-light shadow-sm" asp-for="SubItems[i].CGST_VAL" /></td>
+                                            <td><input class="form-control bg-light shadow-sm" asp-for="SubItems[i].SGST_PER" /></td>
+                                            <td><input class="form-control bg-light shadow-sm" asp-for="SubItems[i].SGST_VAL" /></td>
+                                            <td><input class="form-control bg-light shadow-sm" asp-for="SubItems[i].IGST_PER" /></td>
+                                            <td><input class="form-control bg-light shadow-sm" asp-for="SubItems[i].IGST_VAL" /></td>
+                                            <td><input class="form-control bg-light shadow-sm" asp-for="SubItems[i].Taxable_Value" /></td>
+
+                                            <td class="text-center">
+                                                <button type="button" class="btn btn-sm btn-danger deleteRow">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </td>
+
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+
+                            <div class="text-end">
+                                <button type="button" class="btn btn-sm btn-success" id="addRow">
+                                    <i class="bi bi-plus-lg"></i>  Add
+                                </button>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+                <div class="text-end mt-4">
+                    <button type="submit" name="actionType" value="save" class="btn btn-outline-primary">
+                        Save
+                    </button>
+                    <button type="submit" name="actionType" value="submit" class="btn btn-outline-success">
+                        Submit
+                    </button>
+                    <a asp-action="InvoiceDetailList" class="btn btn-outline-secondary ms-2">
+                        <i class="bi bi-x-circle"></i> Cancel
+                    </a>
+                </div>
+
+                <div class="modal fade" id="filePreviewModal" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog modal-xl">
+                        <div class="modal-content">
+
+                            <div class="modal-header">
+                                <h5 class="modal-title">File Preview</h5>
+                                <button class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+
+                            <div class="modal-body">
+                                <iframe id="filePreviewFrame" style="width: 100%; height: 80vh; border: none;"></iframe>
+                            </div>
+
+                            <div class="modal-footer">
+                                <a id="downloadBtn" class="btn btn-success" target="_blank">
+                                    <i class="bi bi-download"></i> Download
+                                </a>
+                                <button class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+                <div id="loaderOverlay">
+                    <div id="loaderBox">
+                        <div class="spinner-border text-primary"></div>
+                        <p class="mt-3 fw-bold">Processing, please wait...</p>
+                    </div>
+                </div>
+
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+           document.addEventListener("DOMContentLoaded", function () {
+
+        const form = document.getElementById("invoiceForm");
+        let clickedButton = null;
+
+        document.querySelectorAll("button[type=submit]").forEach(btn => {
+            btn.addEventListener("click", function () {
+                clickedButton = this.value;
+            });
+        });
+
+        form.addEventListener("submit", function (e) {
+            e.preventDefault();
+
+            let actionTitle = clickedButton === "submit"
+                ? "Are you sure to submit the invoice?"
+                : "Are you sure to save changes?";
+
+            let confirmText = clickedButton === "submit"
+                ? "Yes, Submit"
+                : "Yes, Save";
+
+            Swal.fire({
+                title: actionTitle,
+                icon: "question",
+                showCancelButton: true,
+                confirmButtonText: confirmText,
+            }).then((result) => {
+
+                if (result.isConfirmed) {
+
+                    Swal.fire({
+                        title: clickedButton === "submit" ? "Submitting..." : "Saving...",
+                        text: "Please wait while updating data.",
+                        allowOutsideClick: false,
+                        allowEscapeKey: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
+
+                    const formData = new FormData(form);
+                    formData.append("actionType", clickedButton);
+
+                    fetch(form.action, {
+                        method: "POST",
+                        body: formData
+                    })
+                    .then(resp => resp.json())
+                    .then(data => {
+
+                        Swal.fire({
+                            title: "Success",
+                            text: data.message,
+                            icon: "success"
+                        }).then(() => {
+                            window.location.href =
+                                "/InvoiceDetail/InvoiceDetailList?ts=" + new Date().getTime();
+                        });
+
+                    })
+                    .catch(() => {
+                        Swal.fire("Error", "Something went wrong!", "error");
+                    });
+                }
+            });
+        });
+
+                const table = document.getElementById("subItemTable").querySelector("tbody");
+                const addRowBtn = document.getElementById("addRow");
+
+                function getNewRowHtml(i) {
+                    return `
+        <tr class="subItemRow">
+            <td class="rowIndex">${i + 1}</td>
+
+            <input type="hidden" name="SubItems[${i}].Rid" value="0" />
+            <input type="hidden" name="SubItems[${i}].InvoiceDetailsId" value="0" />
+
+            <td><input class="form-control bg-light shadow-sm" name="SubItems[${i}].ProductCode" /></td>
+            <td><input class="form-control bg-light shadow-sm" name="SubItems[${i}].Description" /></td>
+            <td><input class="form-control bg-light shadow-sm" name="SubItems[${i}].Unit" /></td>
+            <td><input class="form-control bg-light shadow-sm" name="SubItems[${i}].Quantity" /></td>
+            <td><input class="form-control bg-light shadow-sm" name="SubItems[${i}].UnitPrice" /></td>
+
+            <td><input class="form-control bg-light shadow-sm" name="SubItems[${i}].Amount" /></td>
+            <td><input class="form-control bg-light shadow-sm" name="SubItems[${i}].CGST_PER" /></td>
+            <td><input class="form-control bg-light shadow-sm" name="SubItems[${i}].CGST_VAL" /></td>
+            <td><input class="form-control bg-light shadow-sm" name="SubItems[${i}].SGST_PER" /></td>
+            <td><input class="form-control bg-light shadow-sm" name="SubItems[${i}].SGST_VAL" /></td>
+            <td><input class="form-control bg-light shadow-sm" name="SubItems[${i}].IGST_PER" /></td>
+            <td><input class="form-control bg-light shadow-sm" name="SubItems[${i}].IGST_VAL" /></td>
+            <td><input class="form-control bg-light shadow-sm" name="SubItems[${i}].Taxable_Value" /></td>
+
+            <td class="text-center">
+                <button type="button" class="btn btn-sm btn-danger deleteRow">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </td>
+        </tr>`;
+                }
+
+                addRowBtn.addEventListener("click", () => {
+                    let index = table.querySelectorAll(".subItemRow").length;
+                    table.insertAdjacentHTML("beforeend", getNewRowHtml(index));
+                    resetIndexes();
+                });
+
+                table.addEventListener("click", function (e) {
+                    if (e.target.closest('.deleteRow')) {
+                        e.target.closest("tr").remove();
+                        resetIndexes();
+                    }
+                });
+
+                function resetIndexes() {
+                    const rows = table.querySelectorAll(".subItemRow");
+
+                    rows.forEach((row, i) => {
+                        row.querySelector(".rowIndex").innerText = i + 1;
+
+                        row.querySelectorAll("input").forEach(inp => {
+                            let name = inp.name;
+                            if (name) {
+                                inp.name = name.replace(/\SubItems\[\d+\]/, `SubItems[${i}]`);
+                            }
+                        });
+                    });
+                }
+
+        });
+    </script>
+
+    <script>
+            document.getElementById("previewBtn").addEventListener("click", function () {
+
+            fetch("/InvoiceDetail/PreviewFile?fileName=@Model.FileName")
+                .then(res => res.json())
+                .then(data => {
+
+                    Swal.fire({
+                        title: "Invoice Preview",
+                        html: `
+                            <iframe src="${data.previewUrl}"
+                                    style="width:100%; height:500px; border:none;"></iframe>
+                        `,
+                        width: "80%",
+                        confirmButtonText: "Download",
+                        showCancelButton: true,
+                    }).then(result => {
+                        if (result.isConfirmed) {
+                const link = document.createElement("a");
+                link.href = "/InvoiceDetail/DownloadFile?fileName=@Model.FileName";
+                link.download = "@Model.FileName";
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+
+                    });
+
+                })
+                .catch(err => {
+                    console.error(err);
+                    Swal.fire("Error", "Unable to preview file", "error");
+                });
+
+        });
+
+    </script>
+
+}

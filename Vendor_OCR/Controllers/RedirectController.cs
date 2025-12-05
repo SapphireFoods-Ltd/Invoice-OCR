@@ -1,0 +1,132 @@
+﻿using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Data.SqlClient;
+using System.Data;
+using System.Security.Claims;
+using Vendor_OCR.Repositories;
+
+namespace Vendor_OCR.Controllers
+{
+    public class RedirectController : Controller
+    {
+        
+        private readonly IConfiguration _configuration;
+        private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly VendorRepository _vendorRepo;
+
+        public RedirectController(IConfiguration configuration, IHttpContextAccessor httpContextAccessor, VendorRepository vendorRepo)
+        {
+            _configuration = configuration;
+            _httpContextAccessor = httpContextAccessor;
+            _vendorRepo = vendorRepo;
+        }
+        private string VendorCode =>
+        _httpContextAccessor.HttpContext.Session.GetString("Vendor_Code");
+
+        [HttpGet("/redirect")]
+        public async Task<IActionResult> Index(string q)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(q))
+                    return Redirect("/no-access");
+
+                var words = q.Split('_');
+                if (words.Length < 3)
+                    return Redirect("/no-access");
+
+                string userid = words[0];
+                string username = words[1];
+                string desig = words[2];
+                string costcenter = words[3];
+
+                return CheckEmployee(userid, username, costcenter, desig);
+            }
+            catch(Exception ex) 
+            {
+                _vendorRepo.ErrorLog(ex.Message, VendorCode);
+                return Redirect("/no-access");
+            }
+        }
+
+        private IActionResult CheckEmployee(string userid, string username, string costcenter, string desig)
+        {
+            DataSet ds = new DataSet();
+
+            string connectionString = _configuration.GetConnectionString("SqlConnectionString");
+            using (SqlConnection con = new SqlConnection(connectionString))
+            {
+                using (SqlCommand cmd = new SqlCommand("SP_OCR_selectquery", con))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@mode", "checkEmployee");
+                    cmd.Parameters.AddWithValue("@condition1", userid);
+                    con.Open();
+                    SqlDataAdapter da = new SqlDataAdapter(cmd);
+                    da.Fill(ds);
+                }
+            }
+
+            if (ds.Tables.Count > 0 && ds.Tables[0].Rows.Count > 0)
+            {
+                string utype = ds.Tables[0].Rows[0]["emp_utype"].ToString();
+                string emp_name = ds.Tables[0].Rows[0]["emp_name"].ToString();
+                string emp_email = ds.Tables[0].Rows[0]["emp_email"].ToString();
+
+                HttpContext.Session.SetString("uname", emp_name);
+                HttpContext.Session.SetString("Vendor_Name", emp_name);
+                HttpContext.Session.SetString("uid", userid);
+                HttpContext.Session.SetString("UserEmail", emp_email);
+                HttpContext.Session.SetString("user_type", utype);
+                HttpContext.Session.SetString("sap_code", costcenter);
+
+                var claims = new List<Claim>
+                {
+                    new Claim(ClaimTypes.Name, emp_email),
+                    new Claim("UserType", utype)
+                };
+
+                var claimsIdentity = new ClaimsIdentity(
+                            claims, CookieAuthenticationDefaults.AuthenticationScheme);
+
+                var authProperties = new AuthenticationProperties
+                {
+                    IsPersistent = true,
+                    ExpiresUtc = DateTimeOffset.UtcNow.AddMinutes(30)
+                };
+
+                HttpContext.SignInAsync(
+                           CookieAuthenticationDefaults.AuthenticationScheme,
+                           new ClaimsPrincipal(claimsIdentity),
+                           authProperties);
+                if (utype == "4")
+                    return Redirect("InvoiceList/InvoiceList");
+                else if (utype == "1")
+                    return RedirectToAction("Index", "Home");
+                else if (utype == "5")
+                    return Redirect("InvoiceListStore/InvoiceListStore");
+                else
+                    return Redirect("/no-access");
+            }
+            else if (desig == "SM")
+            {
+                HttpContext.Session.SetString("uname", username);
+                HttpContext.Session.SetString("Vendor_Name", username);
+                HttpContext.Session.SetString("uid", userid);
+                HttpContext.Session.SetString("UserEmail", "");
+                HttpContext.Session.SetString("user_type", "3");
+                HttpContext.Session.SetString("sap_code", costcenter);
+                return Redirect("InvoiceListStore/InvoiceListStore");
+            }
+            else
+            {
+                return Redirect("/no-access");
+            }
+        }
+
+
+
+    }
+
+}

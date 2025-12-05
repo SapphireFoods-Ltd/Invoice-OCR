@@ -1,0 +1,841 @@
+﻿@model Vendor_OCR.Models.RegisterModel
+
+@{
+    ViewData["Title"] = "Vendor Registration";
+}
+
+<style>
+    .align-items-end {
+        display: flex !important;
+        align-items: center !important;
+    }
+
+    .field-validation-error {
+        font-size: 0.8rem;
+        color: red;
+        margin-top: 0.25rem;
+    }
+
+    .card-header {
+        font-weight: 600;
+        font-size: 1rem;
+    }
+
+    .text-danger,
+    .field-validation-valid {
+        /*   display: block; */
+        min-height: 1.25em;
+        font-size: 0.875em;
+        margin-top: 0.25rem;
+    }
+
+</style>
+
+
+
+<style>
+    .required-label::after {
+        content: " *";
+        color: red;
+    }
+</style>
+
+<div class="container mt-5">
+    <div class="card shadow-lg border-0">
+        <div class="card-body">
+            <h3 class="mb-4 text-primary fw-semibold text-center">Vendor Registration</h3>
+
+            <form asp-action="Register" method="post" id="registerForm" enctype="multipart/form-data">
+
+                <!-- Business Details -->
+                <div class="card mb-4 border-0 shadow-sm">
+                    <div class="card-header bg-light fw-semibold">Business Details</div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-3">
+                                <label class="form-label fw-semibold">Store Name</label>
+                                <input name="StoreName" id="StoreName" class="form-control bg-light text-dark shadow-sm" value="My Store" readonly />
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label fw-semibold">Category</label>
+                                <input name="Category" id="Category" class="form-control bg-light text-dark shadow-sm" value="Manufacturer" readonly />
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label fw-semibold">Business Area</label>
+                                <input name="BusinessArea" id="BusinessArea" class="form-control bg-light text-dark shadow-sm" value="Retail" readonly />
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label fw-semibold">Vendor Group</label>
+                                <input name="VendorGroup" id="VendorGroup" class="form-control bg-light text-dark shadow-sm" value="Group A" readonly />
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label fw-semibold">Company Code</label>
+                                <input name="CompanyCode" id="CompanyCode" class="form-control bg-light text-dark shadow-sm" value="1000" readonly />
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label fw-semibold">Role</label>
+                                <input name="Role" id="Role" class="form-control bg-light text-dark shadow-sm" placeholder="Auto-filled" value="Vendor" readonly />
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label fw-semibold">Purchase Org</label>
+                                <input name="PurchaseOrg" id="PurchaseOrg" class="form-control bg-light text-dark shadow-sm" placeholder="Auto-filled" value="PO123" readonly />
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label fw-semibold">Search Term</label>
+                                <input name="SearchTerm" id="SearchTerm" class="form-control bg-light text-dark shadow-sm" placeholder="Auto-filled" value="Retail Vendor" readonly />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Payment Details -->
+                <div class="card mb-4 border-0 shadow-sm">
+                    <div class="card-header bg-light fw-semibold">Payment Details</div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Terms of Payment</label>
+                                <input type="text" class="form-control shadow-sm bg-light" readonly />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Payment Method</label>
+                                <input type="text" class="form-control shadow-sm bg-light" readonly />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Order Currency</label>
+                                <input type="text" class="form-control shadow-sm bg-light" readonly />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
+
+                <div class="card mb-4 border-0 shadow-sm">
+                    <div class="card-header bg-light fw-semibold">Attachments</div>
+                    <div class="card-body">
+                        <div class="row g-3">
+
+                            <!-- Aadhar Card -->
+                            <div class="col-md-4">
+                                <label asp-for="AadharFile" class="form-label fw-semibold required-label">Aadhar Card</label>
+                                <input asp-for="AadharFile" type="file" class="form-control shadow-sm file-input"
+                                       accept=".png,.jpg,.jpeg,.pdf"
+                                       data-existing="@Model.ExistAadharFile"
+                                       data-val-fileRequiredIfNoExisting="true" />
+                                <input type="hidden" name="ExistAadharFile" id="ExistAadharFile" value="@Model.ExistAadharFile" />
+                                <span class="text-success small file-name-display" style="display:none;"></span>
+                                <span class="text-danger small" asp-validation-for="AadharFile"></span>
+                            </div>
+
+                            <!-- PAN Card -->
+                            <div class="col-md-4">
+                                <label asp-for="PanFile" class="form-label fw-semibold required-label">PAN Card</label>
+                                <input asp-for="PanFile" type="file" class="form-control shadow-sm file-input"
+                                       accept=".png,.jpg,.jpeg,.pdf"
+                                       data-existing="@Model.ExistPanFile"
+                                       data-val-fileRequiredIfNoExisting="true" />
+                                <input type="hidden" name="ExistPanFile" id="ExistPanFile" value="@Model.ExistPanFile" />
+                                <span class="text-success small file-name-display" style="display:none;"></span>
+                                <span class="text-danger small" asp-validation-for="PanFile"></span>
+                            </div>
+
+                            <!-- Bank Statement -->
+                            <div class="col-md-4">
+                                <label asp-for="BankStatementFile" class="form-label fw-semibold required-label">Bank Statement / Passbook</label>
+                                <input asp-for="BankStatementFile" type="file" class="form-control shadow-sm file-input"
+                                       accept=".png,.jpg,.jpeg,.pdf"
+                                       data-existing="@Model.ExistBankStatementFile"
+                                       data-val-fileRequiredIfNoExisting="true" />
+                                <input type="hidden" name="ExistBankStatementFile" id="ExistBankStatementFile" value="@Model.ExistBankStatementFile" />
+                                <span class="text-success small file-name-display" style="display:none;"></span>
+                                <span class="text-danger small" asp-validation-for="BankStatementFile"></span>
+                            </div>
+
+                            <!-- Contract / LOI -->
+                            <div class="col-md-4">
+                                <label asp-for="ContractFile" class="form-label fw-semibold required-label">Contract / LOI</label>
+                                <input asp-for="ContractFile" type="file" class="form-control shadow-sm file-input"
+                                       accept=".png,.jpg,.jpeg,.pdf"
+                                       data-existing="@Model.ExistContractFile"
+                                       data-val-fileRequiredIfNoExisting="true" />
+                                <input type="hidden" name="ExistContractFile" id="ExistContractFile" value="@Model.ExistContractFile" />
+                                <span class="text-success small file-name-display" style="display:none;"></span>
+                                <span class="text-danger small" asp-validation-for="ContractFile"></span>
+                            </div>
+
+                            <!-- GST Certificate -->
+                            <div class="col-md-4">
+                                <label asp-for="GstCertificateFile" class="form-label fw-semibold required-label">GST Certificate</label>
+                                <input asp-for="GstCertificateFile" type="file" class="form-control shadow-sm file-input"
+                                       accept=".png,.jpg,.jpeg,.pdf"
+                                       data-existing="@Model.ExistGstCertificateFile"
+                                       data-val-fileRequiredIfNoExisting="true" />
+                                <input type="hidden" name="ExistGstCertificateFile" id="ExistGstCertificateFile" value="@Model.ExistGstCertificateFile" />
+                                <span class="text-success small file-name-display" style="display:none;"></span>
+                                <span class="text-danger small" asp-validation-for="GstCertificateFile"></span>
+                            </div>
+
+                            <!-- MSME Certificate -->
+                            <div class="col-md-4">
+                                <label asp-for="MsmeCertificateFile" class="form-label fw-semibold required-label">MSME Certificate</label>
+                                <input asp-for="MsmeCertificateFile" type="file" class="form-control shadow-sm file-input"
+                                       accept=".png,.jpg,.jpeg,.pdf"
+                                       data-existing="@Model.ExistMsmeCertificateFile"
+                                       data-val-fileRequiredIfNoExisting="true" />
+                                <input type="hidden" name="ExistMsmeCertificateFile" id="ExistMsmeCertificateFile" value="@Model.ExistMsmeCertificateFile" />
+                                <span class="text-success small file-name-display" style="display:none;"></span>
+                                <span class="text-danger small" asp-validation-for="MsmeCertificateFile"></span>
+                            </div>
+
+                            <!-- Lower Tax Certificate -->
+                            <div class="col-md-4">
+                                <label asp-for="LowerTaxCertificateFile" class="form-label fw-semibold required-label">Lower Tax Deduction Certificate</label>
+                                <input asp-for="LowerTaxCertificateFile" type="file" class="form-control shadow-sm file-input"
+                                       accept=".png,.jpg,.jpeg,.pdf"
+                                       data-existing="@Model.ExistLowerTaxCertificateFile"
+                                       data-val-fileRequiredIfNoExisting="true" />
+                                <input type="hidden" name="ExistLowerTaxCertificateFile" id="ExistLowerTaxCertificateFile" value="@Model.ExistLowerTaxCertificateFile" />
+                                <span class="text-success small file-name-display" style="display:none;"></span>
+                                <span class="text-danger small" asp-validation-for="LowerTaxCertificateFile"></span>
+                            </div>
+
+                            <!-- Certificate of Incorporation -->
+                            <div class="col-md-4">
+                                <label asp-for="CertificateOfIncorporationFile" class="form-label fw-semibold required-label">Certificate of Incorporation</label>
+                                <input asp-for="CertificateOfIncorporationFile" type="file" class="form-control shadow-sm file-input"
+                                       accept=".png,.jpg,.jpeg,.pdf"
+                                       data-existing="@Model.ExistCertificateOfIncorporationFile"
+                                       data-val-fileRequiredIfNoExisting="true" />
+                                <input type="hidden" name="ExistCertificateOfIncorporationFile" id="ExistCertificateOfIncorporationFile" value="@Model.ExistCertificateOfIncorporationFile" />
+                                <span class="text-success small file-name-display" style="display:none;"></span>
+                                <span class="text-danger small" asp-validation-for="CertificateOfIncorporationFile"></span>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+
+                <div id="restOfForm" style="display: none;">
+                    <!-- Vendor Details -->
+                    <div class="card mb-4 border-0 shadow-sm">
+                        <div class="card-header bg-light fw-semibold">Vendor Details</div>
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-md-3">
+                                    <label asp-for="CompanyName" class="form-label fw-semibold required-label">Company's Name</label>
+                                    <input asp-for="CompanyName" class="form-control shadow-sm" />
+                                    <span class="text-danger small"></span>
+                                </div>
+                                <div class="col-md-3">
+                                    <label asp-for="ProprietorName" class="form-label fw-semibold">Proprietor's Name</label>
+                                    <input asp-for="ProprietorName" class="form-control shadow-sm" />
+                                    <span class="text-danger small"></span>
+                                </div>
+                                <div class="col-md-3">
+                                    <label asp-for="PartnershipName" class="form-label fw-semibold">Partnership's Name</label>
+                                    <input asp-for="PartnershipName" class="form-control shadow-sm" />
+                                    <span class="text-danger small"></span>
+                                </div>
+                                <div class="col-md-3">
+                                    <label asp-for="MobileNumber" class="form-label fw-semibold required-label">Mobile No.</label>
+                                    <input asp-for="MobileNumber" class="form-control shadow-sm" />
+                                    <span class="text-danger small"></span>
+                                </div>
+                                <div class="col-md-3">
+                                    <label asp-for="Email" class="form-label fw-semibold required-label">Email</label>
+                                    <input asp-for="Email" class="form-control bg-light text-dark shadow-sm" readonly />
+                                    <span class="text-danger small"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Address -->
+                    <div class="card mb-4 border-0 shadow-sm">
+                        <div class="card-header bg-light fw-semibold">Address</div>
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-md-3">
+                                    <label asp-for="Building" class="form-label fw-semibold required-label">Building</label>
+                                    <input asp-for="Building" class="form-control shadow-sm" />
+                                    <span class="text-danger small"></span>
+                                </div>
+                                <div class="col-md-3">
+                                    <label asp-for="Street1" class="form-label fw-semibold required-label">Street 1</label>
+                                    <input asp-for="Street1" class="form-control shadow-sm" />
+                                    <span class="text-danger small"></span>
+                                </div>
+                                <div class="col-md-3">
+                                    <label asp-for="Street2" class="form-label fw-semibold">Street 2(Optional)</label>
+                                    <input asp-for="Street2" class="form-control shadow-sm" />
+                                </div>
+                                <div class="col-md-3">
+                                    <label asp-for="City" class="form-label fw-semibold required-label">City</label>
+                                    <input asp-for="City" class="form-control shadow-sm" />
+                                    <span class="text-danger small"></span>
+                                </div>
+                                <div class="col-md-3">
+                                    <label asp-for="PostalCode" class="form-label fw-semibold required-label">Postal Code</label>
+                                    <input asp-for="PostalCode" class="form-control shadow-sm" />
+                                    <span class="text-danger small"></span>
+                                </div>
+                                <div class="col-md-3">
+                                    <label asp-for="State" class="form-label fw-semibold required-label">State</label>
+                                    <input asp-for="State" class="form-control shadow-sm" />
+                                    <span class="text-danger small"></span>
+                                </div>
+                                <div class="col-md-3">
+                                    <label asp-for="Country" class="form-label fw-semibold required-label">Country</label>
+                                    <select asp-for="Country" class="form-select shadow-sm">
+                                        <option value="">Select</option>
+                                        <option value="IN" selected>India</option>
+                                    </select>
+                                    <span class="text-danger small"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bank Account Details -->
+                    <div class="card mb-4 border-0 shadow-sm">
+                        <div class="card-header bg-light fw-semibold">Bank Account Details</div>
+                        <div class="card-body" id="bankAccounts">
+                            @for (int i = 0; i < Model.BankAccounts.Count; i++)
+                            {
+                                <div class="row g-3 bank-row align-items-end mb-2" data-index="@i">
+                                    <div class="col-md-2">
+                                        <label asp-for="BankAccounts[i].IFSC" class="form-label fw-semibold required-label">IFSC</label>
+                                        <input asp-for="BankAccounts[i].IFSC" class="form-control shadow-sm" />
+                                        <span class="text-danger small"></span>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label asp-for="BankAccounts[i].AccountNumber" class="form-label fw-semibold required-label">Account No</label>
+                                        <input asp-for="BankAccounts[i].AccountNumber" class="form-control shadow-sm" />
+                                        <span class="text-danger small"></span>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label asp-for="BankAccounts[i].AccountHolderName" class="form-label fw-semibold required-label">Holder Name</label>
+                                        <input asp-for="BankAccounts[i].AccountHolderName" class="form-control shadow-sm" />
+                                        <span class="text-danger small"></span>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label asp-for="BankAccounts[i].BankName" class="form-label fw-semibold required-label">Bank Name</label>
+                                        <input asp-for="BankAccounts[i].BankName" class="form-control shadow-sm" />
+                                        <span class="text-danger small"></span>
+                                    </div>
+                                    <div class="col-md-1 d-flex justify-content-end">
+                                        <button type="button" class="btn btn-outline-danger btn-sm remove-row rounded-circle" title="Remove" style="display:none">&#x2715;</button>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                    <!-- Documents Details -->
+                    <div class="card mb-4 border-0 shadow-sm">
+                        <div class="card-header bg-light fw-semibold">Documents Details</div>
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-md-3">
+                                    <label asp-for="AadharNo" class="form-label fw-semibold required-label">Aadhar No.</label>
+                                    <input asp-for="AadharNo" class="form-control shadow-sm" />
+                                    <span class="text-danger small"></span>
+                                </div>
+                                <div class="col-md-3">
+                                    <label asp-for="PanNo" class="form-label fw-semibold required-label">PAN No.</label>
+                                    <input asp-for="PanNo" class="form-control shadow-sm" />
+                                    <span class="text-danger small"></span>
+                                </div>
+                                <div class="col-md-3">
+                                    <label asp-for="GstNo" class="form-label fw-semibold required-label">GST No.</label>
+                                    <input asp-for="GstNo" class="form-control shadow-sm" />
+                                    <span class="text-danger small"></span>
+                                </div>
+                                <div class="col-md-3">
+                                    <label asp-for="NatureOfExpense" class="form-label fw-semibold required-label">Nature of Expense</label>
+                                    <textarea asp-for="NatureOfExpense" class="form-control shadow-sm" rows="1" maxlength="45"></textarea>
+                                    <span class="text-danger small"></span>
+                                </div>
+                                <div class="col-md-3 d-flex align-items-center">
+                                    <div class="form-check form-switch ms-1">
+                                        <input asp-for="IsMSME" class="form-check-input" type="checkbox" />
+                                        <label asp-for="IsMSME" class="form-check-label fw-semibold">MSME</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <label asp-for="MSMENo" class="form-label fw-semibold">MSME Registration No.</label>
+                                    <input asp-for="MSMENo" class="form-control shadow-sm" />
+                                    <span class="text-danger small"></span>
+                                </div>
+
+                                <div class="col-md-3 d-flex align-items-center">
+                                    <div class="form-check form-switch ms-1">
+                                        <input asp-for="HasLowerTaxDeduction" class="form-check-input" type="checkbox" />
+                                        <label asp-for="HasLowerTaxDeduction" class="form-check-label fw-semibold">Lower Tax Deduction</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <label asp-for="LowerTaxCertNo" class="form-label fw-semibold">Lower Tax Deduction Certificate No.</label>
+                                    <input asp-for="LowerTaxCertNo" class="form-control shadow-sm" />
+                                    <span class="text-danger small"></span>
+                                </div>
+                                <div class="col-md-3">
+                                    <label asp-for="ReconciliationAccount" class="form-label fw-semibold required-label">Reconciliation Account</label>
+                                    <input asp-for="ReconciliationAccount" class="form-control shadow-sm" />
+                                    <span class="text-danger small"></span>
+                                </div>
+                                <div class="col-md-3">
+                                    <label asp-for="CinLlpin" class="form-label fw-semibold">CIN/LLPIN</label>
+                                    <input asp-for="CinLlpin" class="form-control shadow-sm" />
+                                    <span class="text-danger small"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Other Details -->
+                    <div class="card mb-4 border-0 shadow-sm">
+                        <div class="card-header bg-light fw-semibold">Other Details</div>
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label asp-for="Remarks" class="form-label fw-semibold">Remarks/Comments</label>
+                                    <textarea asp-for="Remarks" class="form-control shadow-sm" rows="2"></textarea>
+                                    <span class="text-danger small"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="text-center mt-5">
+                        <button type="button" class="btn btn-primary px-4 py-2 shadow-sm me-2" id="btnSave" disabled>Save</button>
+                        <button type="submit" class="btn btn-success px-5 py-2 shadow-sm" id="btnSubmit" disabled>Submit</button>
+                    </div>
+                </div>
+                <input type="hidden" name="OCR_AadharNo" id="OCR_AadharNo" value="" />
+                <input type="hidden" name="OCR_PanNo" id="OCR_PanNo" value="" />
+                <input type="hidden" name="ActionType" id="ActionType" value="" />
+            </form>
+        </div>
+    </div>
+</div>
+
+
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <!-- FILE INPUT VALIDATION LOGIC -->
+    <script>
+        $(function () {
+            // Custom validation rule — required if no existing file
+            $.validator.addMethod("fileRequiredIfNoExisting", function (value, element) {
+                var existingFileName = $(element).data("existing");
+                if (existingFileName && existingFileName.trim() !== "") {
+                    return true;
+                }
+                return element.files.length > 0;
+            }, "This file is required.");
+
+            $.validator.unobtrusive.adapters.addBool("fileRequiredIfNoExisting");
+
+            $(".file-input").each(function () {
+                $(this).rules("add", { fileRequiredIfNoExisting: true });
+            });
+
+            // Optional — Show selected file name under input
+            $(".file-input").on("change", function () {
+                var fileNameDisplay = $(this).siblings(".file-name-display");
+                if (this.files.length > 0) {
+                    fileNameDisplay.text(this.files[0].name).show();
+                } else {
+                    fileNameDisplay.hide();
+                }
+            });
+        });
+    </script>
+
+    <!-- EXISTING FILE DISPLAY LOGIC -->
+    <script>
+        document.querySelectorAll('.file-input').forEach(input => {
+            const fileNameDisplay = input.closest('.col-md-4').querySelector('.file-name-display');
+            const existingFile = input.getAttribute('data-existing');
+
+            if (existingFile) {
+                fileNameDisplay.style.display = 'block';
+                fileNameDisplay.innerHTML = `<span class="text-success small">
+                    Current file: <a href="/vendor_doc/${existingFile}" target="_blank">${existingFile}</a>
+                </span>`;
+            }
+
+            input.addEventListener('change', function () {
+                if (this.files && this.files.length > 0) {
+                    fileNameDisplay.style.display = 'block';
+                    fileNameDisplay.innerHTML = `<span class="text-success small">
+                        New file selected: ${this.files[0].name}
+                    </span>`;
+                } else if (existingFile) {
+                    fileNameDisplay.innerHTML = `<span class="text-success small">
+                        Current file: <a href="/vendor_doc/${existingFile}" target="_blank">${existingFile}</a>
+                    </span>`;
+                } else {
+                    fileNameDisplay.style.display = 'none';
+                }
+            });
+        });
+    </script>
+
+    <!-- MAIN FORM VALIDATION LOGIC -->
+    <script>
+        $(document).ready(function () {
+
+            function hasFileOrExisting(selector) {
+                var input = $(selector)[0];
+                if (!input || input.disabled) return false;
+                var hasNewFile = input.files.length > 0;
+                var hasExisting = $(selector).data('existing');
+                return hasNewFile || (hasExisting && hasExisting.trim() !== "");
+            }
+
+            const aadharFileExists = hasFileOrExisting('#AadharFile');
+            const panFileExists = hasFileOrExisting('#PanFile');
+
+            if (aadharFileExists && panFileExists) {
+                $('#restOfForm').slideDown();
+                $('#btnSave, #btnSubmit').prop('disabled', false);
+            } else {
+                $('#restOfForm').slideUp();
+                $('#btnSave, #btnSubmit').prop('disabled', true);
+            }
+
+            function checkRequiredFilesAndEnableButtons() {
+                const aadharUploadedOrExists = hasFileOrExisting('#AadharFile');
+                const panUploadedOrExists = hasFileOrExisting('#PanFile');
+                if (aadharUploadedOrExists && panUploadedOrExists) {
+                    $('#btnSave, #btnSubmit').prop('disabled', false);
+                } else {
+                    $('#btnSave, #btnSubmit').prop('disabled', true);
+                }
+            }
+
+            $('#AadharFile').on('change', function () {
+                if (hasFileOrExisting('#AadharFile')) {
+                    $('#restOfForm').slideDown();
+                }
+                checkRequiredFilesAndEnableButtons();
+            });
+
+            $('#PanFile').on('change', function () {
+                checkRequiredFilesAndEnableButtons();
+            });
+
+            $('input[type="file"]').on('change', function () {
+                const fileNameDisplay = $(this).siblings('.file-name-display');
+                if (this.files.length > 0) {
+                    fileNameDisplay.text(`Selected: ${this.files[0].name}`);
+                } else {
+                    fileNameDisplay.text('');
+                }
+            });
+
+            function showError(element, message) {
+                if (!element) return;
+                const errorSpan = $(element).closest('[class^="col-md-"]').find('.text-danger.small').first();
+                if (errorSpan) errorSpan.text(message);
+            }
+            function clearError(element) {
+                if (!element) return;
+                const errorSpan = $(element).closest('[class^="col-md-"]').find('.text-danger.small').first();
+                if (errorSpan) errorSpan.text('');
+            }
+            function clearAllErrors() {
+                $('#registerForm .text-danger.small').text('');
+            }
+
+            $('#registerForm').on('input change', 'input, select, textarea', function () {
+                clearError(this);
+            });
+
+            function validateForm() {
+                let isValid = true;
+                clearAllErrors();
+
+                function validateField(selector, name, required, regex = null, regexMessage = 'Invalid format.') {
+                    const field = $(selector)[0];
+                    if (!field || field.disabled) return;
+                    const value = field.value.trim();
+
+                    if (required && !value) {
+                        showError(field, `${name} is required.`);
+                        isValid = false;
+                        return;
+                    }
+                    if (value && regex && !regex.test(value)) {
+                        showError(field, regexMessage);
+                        isValid = false;
+                    }
+                }
+
+                function validateFile(selector, name, required) {
+                    const fileInput = $(selector)[0];
+                    if (!fileInput || fileInput.disabled) return;
+                    const hasExisting = $(selector).data('existing');
+                    const hasNewFile = fileInput.files.length > 0;
+                    if (required && !hasNewFile && (!hasExisting || hasExisting.trim() === "")) {
+                        showError(fileInput, `${name} is required.`);
+                        isValid = false;
+                    }
+                }
+
+
+                validateFile('#AadharFile', 'Aadhar Card', true);
+                validateFile('#PanFile', 'PAN Card', true);
+                validateFile('#BankStatementFile', 'Bank Statement / Passbook', true);
+                validateFile('#ContractFile', 'Contract / LOI', true);
+                validateFile('#GstCertificateFile', 'GST Certificate', true);
+                validateFile('#CertificateOfIncorporationFile', 'Certificate of Incorporation', true);
+
+                validateFile('#LowerTaxCertificateFile', 'Lower Tax Certificate', true);
+                validateFile('#MsmeCertificateFile', 'MSME Certificate', true);
+
+                // Remaining fields
+                if ($('#restOfForm').is(':visible')) {
+                    validateField('#CompanyName', "Company's Name", true, /^[A-Za-z0-9'()-.& ]{4,}$/, 'Invalid Company Name.');
+                    validateField('#MobileNumber', 'Mobile No.', true, /^[0-9]{10}$/, 'Invalid Mobile Number.');
+                    validateField('#Building', 'Building', true, /^[\w. ,'&~/\"":;-]*$/, 'Invalid characters in Building.');
+                    validateField('#Street1', 'Street 1', true, /^[\w. ,'&~/\"":;-]*$/, 'Invalid Street 1.');
+                    validateField('#City', 'City', true, /^[a-zA-Z ]*$/, 'Only alphabets allowed in city.');
+                    validateField('#PostalCode', 'Postal Code', true, /^[1-9][0-9]{5}$/, 'Invalid PIN format.');
+                    validateField('#State', 'State', true);
+                    validateField('#Country', 'Country', true);
+                    validateField('#GstNo', 'GST No.', true,
+                        /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/,
+                        'Invalid GST format.'
+                    );
+                    validateField('#AadharNo', 'Aadhar No.', true, /^[2-9]{1}[0-9]{11}$/, 'Invalid Aadhar format.');
+                    validateField('#PanNo', 'PAN No.', true, /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/, 'Invalid PAN format.');
+                    validateField('#NatureOfExpense', 'Nature of Expense', true);
+                    validateField('#ReconciliationAccount', 'Reconciliation Account', true);
+                    validateField('#ProprietorName', "Proprietor's Name", false);
+                    validateField('#PartnershipName', "Partnership's Name", false);
+                    validateField('#CinLlpin', 'CIN/LLPIN', false,
+                        /^([LUu]{1})([0-9]{5})([A-Za-z]{2})([0-9]{4})([A-Za-z]{3})([0-9]{6})$|^([A-Za-z]{3})-([0-9]{4})$/,
+                        'Invalid CIN/LLPIN format.'
+                    );
+
+                    // MSME Section
+                    if ($('#IsMSME').is(':checked')) {
+                        validateField('#MSMENo', 'MSME Registration No.', true);
+                        validateFile('#MsmeCertificateFile', 'MSME Certificate', true);
+                    }
+
+                    // Lower Tax Section
+                    if ($('#HasLowerTaxDeduction').is(':checked')) {
+                        validateField('#LowerTaxCertNo', 'Lower Tax Deduction Certificate No.', true);
+                        validateFile('#LowerTaxCertificateFile', 'Lower Tax Certificate', true);
+                    }
+
+                    // Bank Accounts Validation
+                    $('#bankAccounts .bank-row').each(function (index, row) {
+                        const ifscInput = $(row).find('input[name$=".IFSC"]')[0];
+                        const accNumInput = $(row).find('input[name$=".AccountNumber"]')[0];
+                        const holderNameInput = $(row).find('input[name$=".AccountHolderName"]')[0];
+                        const bankNameInput = $(row).find('input[name$=".BankName"]')[0];
+
+                        if (!ifscInput.value.trim()) {
+                            showError(ifscInput, 'IFSC is required.');
+                            isValid = false;
+                        } else if (!/^[A-Za-z]{4}[A-Za-z0-9]{7}$/.test(ifscInput.value)) {
+                            showError(ifscInput, 'Invalid IFSC format.');
+                            isValid = false;
+                        }
+
+                        if (!accNumInput.value.trim()) {
+                            showError(accNumInput, 'A/C No. is required.');
+                            isValid = false;
+                        } else if (!/^[0-9]{2,20}$/.test(accNumInput.value)) {
+                            showError(accNumInput, 'Invalid Account Number.');
+                            isValid = false;
+                        }
+
+                        if (!holderNameInput.value.trim()) {
+                            showError(holderNameInput, 'Holder Name is required.');
+                            isValid = false;
+                        } else if (!/^[a-zA-Z0-9 ]*$/.test(holderNameInput.value)) {
+                            showError(holderNameInput, 'Invalid Account Holder Name.');
+                            isValid = false;
+                        }
+
+                        if (!bankNameInput.value.trim()) {
+                            showError(bankNameInput, 'Bank Name is required.');
+                            isValid = false;
+                        } else if (!/^[a-zA-Z ]*$/.test(bankNameInput.value)) {
+                            showError(bankNameInput, 'Invalid Bank Name.');
+                            isValid = false;
+                        }
+                    });
+                }
+                return isValid;
+            }
+
+
+        function toggleConditionalFields() {
+            const isMsmeChecked = $('#IsMSME').is(':checked');
+            const hasLowerTaxChecked = $('#HasLowerTaxDeduction').is(':checked');
+
+     
+            $('#MSMENo').prop('disabled', !isMsmeChecked);
+            $("label[for='MSMENo']").toggleClass('required-label', isMsmeChecked);
+
+            $('#MsmeCertificateFile').prop('disabled', false);
+            $("label[for='MsmeCertificateFile']").addClass('required-label');
+
+     
+            $('#LowerTaxCertNo').prop('disabled', !hasLowerTaxChecked);
+            $("label[for='LowerTaxCertNo']").toggleClass('required-label', hasLowerTaxChecked);
+
+ 
+            $('#LowerTaxCertificateFile').prop('disabled', false);
+            $("label[for='LowerTaxCertificateFile']").addClass('required-label');
+        }
+
+        toggleConditionalFields();
+        $('#IsMSME, #HasLowerTaxDeduction').on('change', toggleConditionalFields);
+
+        $('#MsmeCertificateFile').on('change', function () {
+            if (this.files && this.files.length > 0) {
+                $('#IsMSME').prop('checked', true).trigger('change');
+            }
+        });
+
+        $('#LowerTaxCertificateFile').on('change', function () {
+            if (this.files && this.files.length > 0) {
+                $('#HasLowerTaxDeduction').prop('checked', true).trigger('change');
+            }
+        });
+
+
+            function handleFormAction(button, action, confirmationText, confirmButtonColor) {
+                $(button).on('click', function (e) {
+                    e.preventDefault();
+
+                    if (!validateForm()) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Validation Error',
+                            text: 'Please fix the highlighted errors before proceeding.'
+                        });
+                        return;
+                    }
+
+                   Swal.fire({
+            title: 'Are you sure?',
+            text: confirmationText,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: `Yes, ${action} it!`,
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: confirmButtonColor,
+            cancelButtonColor: '#d33'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $('#ActionType').val(action);
+                $('#registerForm').submit();
+            }
+        });
+                });
+            }
+
+            handleFormAction('#btnSave', 'Save', 'Do you want to Save?', '#3085d6');
+            handleFormAction('#btnSubmit', 'Submit', 'Do you want to Submit?', '#3085d6');
+        });
+    </script>
+
+    <!-- BANK DETAILS ADD/REMOVE LOGIC -->
+    <script>
+        $(document).ready(function () {
+            updateRemoveButtons();
+            refreshAddRowButtons();
+
+            function updateRemoveButtons() {
+                const rows = $("#bankAccounts .bank-row");
+                rows.find(".remove-row").hide();
+                if (rows.length > 1) {
+                    rows.find(".remove-row").show();
+                }
+            }
+
+            function refreshAddRowButtons() {
+                const rows = $("#bankAccounts .bank-row");
+                rows.find(".add-button-wrapper").remove();
+
+                const lastRow = rows.last();
+                const addButtonHtml = `
+                    <div class="col-md-2 add-button-wrapper text-start d-flex align-items-center">
+                        <button type="button" class="btn btn-success btn-sm add-row">Add Another A/C</button>
+                    </div>`;
+                lastRow.append(addButtonHtml);
+            }
+
+            $(document).on("click", ".add-row", function () {
+                const container = $("#bankAccounts");
+                const index = container.find(".bank-row").length;
+
+                const template = `
+                    <div class="row g-3 bank-row align-items-end mb-2" data-index="${index}">
+                        <div class="col-md-2">
+                            <label class="form-label fw-semibold required-label">IFSC</label>
+                            <input name="BankAccounts[${index}].IFSC" class="form-control shadow-sm" />
+                            <span class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold required-label">Account No</label>
+                            <input name="BankAccounts[${index}].AccountNumber" class="form-control shadow-sm" />
+                            <span class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold required-label">Holder Name</label>
+                            <input name="BankAccounts[${index}].AccountHolderName" class="form-control shadow-sm" />
+                            <span class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold required-label">Bank Name</label>
+                            <input name="BankAccounts[${index}].BankName" class="form-control shadow-sm" />
+                            <span class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-1 d-flex justify-content-end">
+                            <button type="button" class="btn btn-outline-danger btn-sm remove-row rounded-circle" title="Remove">&#x2715;</button>
+                        </div>
+                    </div>`;
+
+                container.append(template);
+                updateRemoveButtons();
+                refreshAddRowButtons();
+            });
+
+            $(document).on("click", ".remove-row", function () {
+                $(this).closest(".bank-row").remove();
+
+                $("#bankAccounts .bank-row").each(function (i, row) {
+                    $(row).attr("data-index", i);
+                    $(row).find("input").each(function () {
+                        const nameAttr = $(this).attr("name").replace(/\[\d+\]/, `[${i}]`);
+                        $(this).attr("name", nameAttr);
+                    });
+                });
+
+                updateRemoveButtons();
+                refreshAddRowButtons();
+            });
+        });
+    </script>
+}
+
+
+
+
+
+

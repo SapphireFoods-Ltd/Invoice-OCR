@@ -1,0 +1,434 @@
+﻿@model IEnumerable<InvoiceList>
+
+@{
+    ViewData["Title"] = "Invoice List";
+    var pendingCount = Model.Count(x => x.Status == "P");
+    var approvedCount = Model.Count(x => x.Status == "A");
+    var rejectedCount = Model.Count(x => x.Status == "R" || x.Status == "OR");
+}
+
+<style>
+    .status-card.active {
+        border-width: 3px !important;
+        transform: scale(1.03);
+        transition: all 0.2s ease-in-out;
+        box-shadow: 0 0 10px rgba(0,0,0,0.15);
+        cursor: pointer;
+    }
+
+    .status-card {
+        cursor: pointer;
+    }
+
+</style>
+
+<div class="container mt-5">
+    <div class="card shadow-lg border-0">
+        <div class="card-body">
+            <h3 class="mb-4 text-primary fw-semibold text-center">Invoice List</h3>
+
+            <div class="row mb-4 text-center">
+                <div class="col-md-4">
+                    <div class="status-card card border-primary shadow-sm" id="cardPending" data-status="P">
+                        <div class="card-body">
+                            <h5 class="card-title text-primary fw-bold">Pending</h5>
+                            <p class="display-6 fw-semibold text-primary mb-0" id="countPending">@pendingCount</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="status-card card border-success shadow-sm" id="cardApproved" data-status="A">
+                        <div class="card-body">
+                            <h5 class="card-title text-success fw-bold">Approved</h5>
+                            <p class="display-6 fw-semibold text-success mb-0" id="countApproved">@approvedCount</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="status-card card border-danger shadow-sm" id="cardRejected" data-status="R">
+                        <div class="card-body">
+                            <h5 class="card-title text-danger fw-bold">Rejected</h5>
+                            <p class="display-6 fw-semibold text-danger mb-0" id="countRejected">@rejectedCount</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card mb-4 border-0 shadow-sm">
+                <div class="card-header bg-light fw-semibold">Invoice List</div>
+                <div class="card-body">
+                    <table id="InvoiceTable" class="table table-hover table-bordered">
+                        <thead>
+                            <tr>
+                                <th><input type="checkbox" id="selectAll" /></th>
+                                <th>Invoice Id</th>
+                                <th>Invoice Name</th>
+                                <th>Remark</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var v in Model)
+                            {
+                                <tr data-id="@v.Id" data-status="@v.Status">
+                                    <td>
+                                        <input asp-for="@v.IsSelected" class="chk-item" type="checkbox" />
+                                    </td>
+                                    <td>@v.Id</td>
+
+                                    @if (v.Status == "P" || v.Status == "R" || v.Status == "OR")
+                                    {
+                                        <td>
+                                            <div class="d-flex align-items-center justify-content-between">
+                                                <a href="javascript:void(0)"
+                                                   class="text-primary text-decoration-none previewBtn"
+                                                   data-invoice="@v.InvoiceName"
+                                                   data-local-url="@Url.Content("~/tempUploads/" + v.InvoiceName)">
+                                                    @v.raw_Name
+                                                </a>
+
+                                                <!-- Arrow opens local file in new tab -->
+                                                <a href="@Url.Content("~/tempUploads/" + v.InvoiceName)"
+                                                   target="_blank"
+                                                   title="Open in new tab"
+                                                   class="text-success ms-2"
+                                                   style="font-size: 0.9rem;">
+                                                    <i class="bi bi-box-arrow-up-right"></i>
+                                                </a>
+                                            </div>
+                                        </td>
+                                    }
+                                    else if (v.Status == "A")
+                                    {
+                                        <td>
+                                            <div class="d-flex align-items-center justify-content-between">
+                                                <a href="#" class="open-pdf-link text-primary fw-semibold text-decoration-none flex-grow-1"
+                                                   data-s3="@v.S3BucketLink"
+                                                   data-name="@v.raw_Name">
+                                                    @v.raw_Name
+                                                </a>
+
+                                                @if (!string.IsNullOrEmpty(v.S3BucketLink))
+                                                {
+                                                    <a href="@v.S3BucketLink"
+                                                       target="_blank"
+                                                       title="Open in new tab"
+                                                       class="text-success ms-2"
+                                                       style="font-size: 0.9rem;">
+                                                        <i class="bi bi-box-arrow-up-right"></i>
+                                                    </a>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted ms-2" style="font-size: 0.9rem;">
+                                                        <i class="bi bi-dash-lg"></i>
+                                                    </span>
+                                                }
+                                            </div>
+                                        </td>
+                                    }
+
+
+                                    <td>@v.Remark</td>
+                                    <td>
+                                        @if (v.Status == "P")
+                                        {
+                                            <span class="text-warning fw-semibold">Pending</span>
+                                        }
+                                        else if (v.Status == "A")
+                                        {
+                                            <span class="text-success fw-semibold">Approved</span>
+                                        }
+                                        else if (v.Status == "R" || v.Status == "OR")
+                                        {
+                                            <span class="text-danger fw-semibold">Rejected</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                    <div id="actionButtons" class="text-end mt-3" style="display:none;">
+                        <button id="btnApprove" class="btn btn-success me-2">
+                            <i class="bi bi-check-circle"></i> Approve
+                        </button>
+                        <button id="btnReject" class="btn btn-danger">
+                            <i class="bi bi-x-circle"></i> Reject
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal fade" id="pdfModal" tabindex="-1" aria-labelledby="pdfModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-xl modal-dialog-centered" style="max-width:95%;">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="pdfModalLabel">Invoice PDF</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body p-0">
+                            <iframe id="pdfFrame" style="width:100%; height:75vh; border:0;"></iframe>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+@section Scripts {
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-datepicker@1.10.0/dist/css/bootstrap-datepicker.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap-datepicker@1.10.0/dist/js/bootstrap-datepicker.min.js"></script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const pdfModalEl = document.getElementById('pdfModal');
+            const pdfModal = new bootstrap.Modal(pdfModalEl);
+            const pdfFrame = document.getElementById('pdfFrame');
+            const modalTitle = document.getElementById('pdfModalLabel');
+
+            // Helper to open modal with given url and title
+            function openPdfInModal(url, title) {
+                if (!url) {
+                    alert("No PDF link available.");
+                    return;
+                }
+
+                modalTitle.textContent = title || 'Invoice';
+                // prefer using the full url as-is
+                pdfFrame.src = url;
+                pdfModal.show();
+            }
+
+            // S3 links (your existing else branch)
+            document.querySelectorAll('.open-pdf-link').forEach(link => {
+                link.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const pdfUrl = this.dataset.s3;
+                    const invoiceName = this.dataset.name || this.textContent.trim();
+                    if (!pdfUrl) {
+                        alert("No S3 link available for this invoice.");
+                        return;
+                    }
+                    openPdfInModal(pdfUrl, invoiceName);
+                });
+            });
+
+            // Local files (if branch)
+            document.querySelectorAll('.previewBtn').forEach(link => {
+                link.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    // Use data-local-url which was generated by Url.Content()
+                    const localUrl = this.dataset.localUrl || this.dataset.invoice;
+                    const invoiceName = this.dataset.invoice || this.textContent.trim();
+
+                    if (!localUrl) {
+                        // fallback: try opening the relative InvoiceName
+                        alert("No local URL available for this invoice.");
+                        return;
+                    }
+
+                    openPdfInModal(localUrl, invoiceName);
+                });
+            });
+
+            // Clear iframe when modal is hidden (release memory and stop audio)
+            pdfModalEl.addEventListener('hidden.bs.modal', function () {
+                pdfFrame.src = "about:blank";
+            });
+
+            // Optional: if iframe fails to load PDF (e.g., browser blocks), offer to open in new tab
+            pdfFrame.addEventListener('error', function () {
+                if (confirm("Unable to display PDF in modal. Open in new tab instead?")) {
+                    window.open(pdfFrame.src, '_blank');
+                }
+            });
+        });
+    </script>
+
+
+
+    <script>
+        $(document).ready(function () {
+
+            var table = $('#InvoiceTable').DataTable({
+                orderCellsTop: true,
+                fixedHeader: true,
+                columnDefs: [
+                    { orderable: true, targets: [1, 2, 3, 4] },
+                    { orderable: false, targets: [0] }
+                ],
+                initComplete: function () {
+                    this.api().column(4).search('Pending').draw();
+                    $('#cardPending').addClass('active border-3');
+                    $('#selectAll').prop('disabled', false);
+                    $('.chk-item').prop('disabled', false);
+                    toggleActionButtons();
+                }
+            });
+
+            $('#selectAll').on('change', function () {
+                $('.chk-item:not(:disabled)').prop('checked', $(this).prop('checked'));
+                toggleActionButtons();
+            });
+
+            $(document).on('change', '.chk-item', function () {
+                var total = $('.chk-item:not(:disabled)').length;
+                var chk = $('.chk-item:not(:disabled):checked').length;
+                $('#selectAll').prop('checked', chk === total && total > 0);
+                toggleActionButtons();
+            });
+
+            $('.status-card').on('click', function () {
+                $('.status-card').removeClass('active border-3');
+                $(this).addClass('active border-3');
+                var status = $(this).data('status');
+                filterByStatus(status);
+            });
+
+            function filterByStatus(status) {
+                let text = status === 'P' ? 'Pending' : status === 'A' ? 'Approved' : 'Rejected';
+
+                if (table) {
+                    table.column(4).search(text).draw(); // updated from 5 to 4
+                }
+
+                if (status === 'P') {
+                    $('#selectAll').prop('disabled', false);
+                    $('.chk-item').prop('disabled', false);
+                } else {
+                    $('#selectAll').prop('disabled', true).prop('checked', false);
+                    $('.chk-item').prop('disabled', true).prop('checked', false);
+                }
+                toggleActionButtons();
+            }
+
+            function toggleActionButtons() {
+                var anySelected = $('.chk-item:checked').length > 0;
+                var isPendingTab = $('#cardPending').hasClass('active');
+                if (anySelected && isPendingTab) $('#actionButtons').fadeIn(200);
+                else $('#actionButtons').fadeOut(200);
+            }
+
+            $('#btnApprove').on('click', function () {
+                const ids = $('.chk-item:checked').map(function () {
+                    return $(this).closest('tr').data('id');
+                }).get();
+
+                if (ids.length === 0) {
+                    Swal.fire('No Selection', 'Please select at least one invoice.', 'warning');
+                    return;
+                }
+
+                Swal.fire({
+                    title: 'Are you sure want to Approve selected invoices?',
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: 'Yes, Approve'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+
+
+                    Swal.fire({
+                        title: 'Approving invoices...',
+                        text: 'Please wait while we process your request.',
+                        allowOutsideClick: false,
+                        allowEscapeKey: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
+
+                        $.ajax({
+                            url: '/InvoiceList/ApproveInvoices',
+                            type: 'POST',
+                            contentType: 'application/json',
+                            data: JSON.stringify(ids),
+                            success: function (response) {
+                                 Swal.close();
+                                if (response.success) {
+                                    Swal.fire('Success', response.message, 'success').then(() => location.reload());
+                                } else {
+                                    Swal.fire('Error', response.message, 'error');
+                                }
+                            },
+                            error: function (xhr, status, error) {
+
+                                Swal.close();
+                                Swal.fire('Error', 'An unexpected error occurred while approving invoices. Please try again.', 'error');
+                            }
+                        });
+                    }
+                });
+            });
+
+            $('#btnReject').on('click', function () {
+            const ids = $('.chk-item:checked').map(function () {
+                return $(this).closest('tr').data('id');
+            }).get();
+
+            if (ids.length === 0) {
+                Swal.fire('No Selection', 'Please select at least one invoice.', 'warning');
+                return;
+            }
+
+            // Step 1: Ask for reject remark
+            Swal.fire({
+                //title: 'Reject Invoices',
+                input: 'textarea',
+                inputLabel: 'Enter reason for rejection',
+                inputPlaceholder: 'Type your remark here...',
+                inputAttributes: {
+                    'aria-label': 'Type your remark here'
+                },
+                showCancelButton: true,
+                confirmButtonText: 'Submit',
+                cancelButtonText: 'Cancel',
+                inputValidator: (value) => {
+                    if (!value) {
+                        return 'Please enter a remark!';
+                    }
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+
+                     Swal.fire({
+                        title: 'Rejecting invoices...',
+                        text: 'Please wait while we process your request.',
+                        allowOutsideClick: false,
+                        allowEscapeKey: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
+
+                    const remark = result.value;
+
+                    // Step 2: Send IDs and remark to server
+                    $.ajax({
+                        url: '/InvoiceList/RejectInvoices',
+                        type: 'POST',
+                        contentType: 'application/json',
+                        data: JSON.stringify({ ids: ids, remark: remark }),
+                        success: function (response) {
+                            Swal.close();
+                            if (response.success) {
+                                Swal.fire('Rejected!', response.message, 'success').then(() => location.reload());
+                            } else {
+                                Swal.fire('Error', response.message, 'error');
+                            }
+                        },
+                        error: function () {
+                            Swal.close();
+                            Swal.fire('Error', 'Something went wrong while rejecting invoices.', 'error');
+                        }
+                    });
+                }
+            });
+        });
+
+        });
+    </script>
+}

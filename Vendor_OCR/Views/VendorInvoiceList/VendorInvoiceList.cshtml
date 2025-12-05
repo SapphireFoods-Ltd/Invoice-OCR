@@ -1,0 +1,274 @@
+﻿@model IEnumerable<Vendor_OCR.Models.VendorInvoiceModel>
+
+@{
+    ViewBag.Title = "Vendor Invoice List";
+}
+
+<style>
+    .col-id {
+        width: 80px; /* Adjust size as needed */
+        white-space: nowrap;
+    }
+
+      .status-card.active {
+        border-width: 3px !important;
+        transform: scale(1.03);
+        transition: all 0.2s ease-in-out;
+        box-shadow: 0 0 10px rgba(0,0,0,0.15);
+        cursor: pointer;
+    }
+
+    .status-card {
+        cursor: pointer;
+    }
+</style>
+
+<div class="container mt-5">
+    <div class="card shadow-lg border-0">
+        <div class="card-body">
+            <h3 class="mb-4 text-primary fw-semibold text-center">Vendor Invoice List</h3>
+
+             <div class="row mb-4 text-center">
+                <div class="col-md-4">
+                    <div class="status-card card border-primary shadow-sm" id="cardPending" data-status="P">
+                        <div class="card-body">
+                            <h5 class="card-title text-primary fw-bold">Pending</h5>
+                            <p class="display-6 fw-semibold text-primary mb-0" id="countPending">@ViewBag.PendingCount</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="status-card card border-success shadow-sm" id="cardApproved" data-status="A">
+                        <div class="card-body">
+                            <h5 class="card-title text-success fw-bold">Approved</h5>
+                            <p class="display-6 fw-semibold text-success mb-0" id="countApproved">@ViewBag.ApprovedCount</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="status-card card border-danger shadow-sm" id="cardRejected" data-status="R">
+                        <div class="card-body">
+                            <h5 class="card-title text-danger fw-bold">Rejected</h5>
+                            <p class="display-6 fw-semibold text-danger mb-0" id="countRejected">@ViewBag.RejectedCount</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-4 border-0 shadow-sm">
+                <div class="card-header bg-light fw-semibold">Invoice Details</div>
+                <div class="card-body">
+                    <table id="invoiceTable" class="table table-hover table-bordered align-middle">
+                        <thead>
+                            <tr class="table-light">
+                                <th>Invoice Id</th>
+                                <th>Invoice Name</th>
+                                <th>Insert Date</th>
+                                <th>Category</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+
+                            <!-- ✅ Search Inputs Row -->
+                            <tr class="filters bg-light">
+                                <th><input type="text" class="form-control form-control-sm" placeholder="Search ID" /></th>
+                                <th><input type="text" class="form-control form-control-sm" placeholder="Search Invoice" /></th>
+                                <th>
+                                    <input type="text" class="form-control form-control-sm datepicker" placeholder="dd-mm-yyyy" autocomplete="off" />
+                                </th>
+                                <th><input type="text" class="form-control form-control-sm" placeholder="Search Category" /></th>
+                                <th><input type="text" class="form-control form-control-sm" placeholder="Search Status" /></th>
+                                <th></th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            @foreach (var inv in Model)
+                            {
+                                <tr>
+                                    <td>@inv.ID</td>
+                                    <td>
+                                        <div class="d-flex align-items-center justify-content-between">
+                                            <a href="#" class="open-pdf-link text-primary fw-semibold text-decoration-none flex-grow-1"
+                                               data-s3="@inv.S3BucketLink"
+                                               data-name="@inv.raw_Name">
+                                                @inv.raw_Name
+                                            </a>
+
+                                            @if (!string.IsNullOrEmpty(inv.S3BucketLink))
+                                            {
+                                                <a href="@inv.S3BucketLink"
+                                                   target="_blank"
+                                                   title="Open in new tab"
+                                                   class="text-success ms-2"
+                                                   style="font-size: 0.9rem;">
+                                                    <i class="bi bi-box-arrow-up-right"></i>
+                                                </a>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted ms-2" style="font-size: 0.9rem;">
+                                                    <i class="bi bi-dash-lg"></i>
+                                                </span>
+                                            }
+                                        </div>
+                                    </td>
+                                    <td>@inv.ins_dt?.ToString("dd-MM-yyyy")</td>
+                                    <td>@inv.Category</td>
+                                    <td>
+                                        @if (inv.action == "OCR Approved")
+                                        {
+                                            <span class="text-success">@inv.action</span>
+                                        }
+                                        else if (inv.action == "OCR Rejected")
+                                        {
+                                            <span class="text-danger">@inv.action</span>
+                                        }
+                                        else
+                                        {
+                                            <span>@inv.action</span>
+                                        }
+                                    </td>
+                                   <td>
+                                       @if (inv.action == "OCR Approved")
+                                       {
+                                           <span class="text-success fw-bold">&#10003;</span>  <!-- ✔ green tick -->
+                                       }
+                                       else if (inv.action == "OCR Rejected")
+                                       {
+                                           <a href="/Upload/Upload?id=@inv.ID" class="btn btn-sm btn-outline-primary">
+                                                <i class="bi bi-pencil-square"></i> Edit
+                                            </a>
+                                       }
+                                       else
+                                       {
+                                           <span>-</span>  <!-- Pending -->
+                                       }
+                                   </td>
+
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ✅ Bootstrap Modal (unchanged) -->
+<div class="modal fade" id="pdfModal" tabindex="-1" aria-labelledby="pdfModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered" style="max-width:95%;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="pdfModalLabel">Invoice PDF</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0">
+                <iframe id="pdfFrame" style="width:100%; height:75vh; border:0;"></iframe>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-datepicker@1.10.0/dist/css/bootstrap-datepicker.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap-datepicker@1.10.0/dist/js/bootstrap-datepicker.min.js"></script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const pdfModal = new bootstrap.Modal(document.getElementById('pdfModal'));
+            const pdfFrame = document.getElementById('pdfFrame');
+            const modalTitle = document.getElementById('pdfModalLabel');
+
+            // Handle click on invoice name to open modal
+            document.querySelectorAll('.open-pdf-link').forEach(link => {
+                link.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const pdfUrl = this.dataset.s3;
+                    const invoiceName = this.dataset.name;
+
+                    if (!pdfUrl) {
+                        alert("No S3 link available for this invoice.");
+                        return;
+                    }
+
+                    modalTitle.textContent = invoiceName;
+                    pdfFrame.src = pdfUrl;
+                    pdfModal.show();
+                });
+            });
+
+            // Clear iframe when modal is closed
+            document.getElementById('pdfModal').addEventListener('hidden.bs.modal', function () {
+                pdfFrame.src = "about:blank";
+            });
+        });
+    </script>
+
+
+    <script>
+        $(document).ready(function () {
+
+            // ✅ Initialize DataTable
+            var table = $('#invoiceTable').DataTable({
+                orderCellsTop: true,
+                fixedHeader: true,
+                pageLength: 10,
+                lengthMenu: [5, 10, 25, 50],
+                language: {
+                    search: "",
+                    searchPlaceholder: "Search all columns..."
+                }
+            });
+
+            // ✅ Initialize Bootstrap Datepicker for date filter
+            $('.datepicker').datepicker({
+                format: 'dd-mm-yyyy',
+                autoclose: true,
+                todayHighlight: true,
+                clearBtn: true
+            });
+
+            // ✅ Apply column-specific search filters
+            $('#invoiceTable thead tr.filters th').each(function (i) {
+                $('input', this).on('keyup change', function () {
+                    if (table.column(i).search() !== this.value) {
+                        table.column(i).search(this.value).draw();
+                    }
+                });
+            });
+
+            // ✅ Special handling for DatePicker filter
+            $('.datepicker').on('change', function () {
+                var dateValue = this.value;
+                table.column(2) // Assuming 3rd column = Insert Date
+                    .search(dateValue ? dateValue : '', true, false)
+                    .draw();
+            });
+
+
+            $('.status-card').on('click', function () {
+            var statusText = $(this).data('status'); // e.g. "Pending", "OCR Approved", "OCR Rejected"
+
+            // toggle active UI
+            $('.status-card').removeClass('active');
+            $(this).addClass('active');
+
+            // apply filter on Status column
+            table.column(4).search(statusText).draw();
+        });
+
+        
+        var defaultStatus = $('#cardPending').data('status'); 
+        $('#cardPending').addClass('active');
+        table.column(4).search(defaultStatus).draw();
+    });
+
+        
+    </script>
+
+
+}

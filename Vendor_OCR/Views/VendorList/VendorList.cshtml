@@ -1,0 +1,312 @@
+﻿@model IEnumerable<VendorList>
+
+@{
+    ViewData["Title"] = "Vendor List";
+}
+
+
+
+<div class="container mt-5">
+    <div class="card shadow-lg border-0">
+        <div class="card-body">
+            <h3 class="mb-4 text-primary fw-semibold text-center">Vendor List</h3>
+
+            <div class="card mb-4 border-0 shadow-sm">
+                <div class="card-header bg-light fw-semibold">Vendor List</div>
+                <div class="card-body">
+
+
+
+                    <table id="vendorTable" class="table table-hover table-bordered">
+                        <thead>
+                            <tr>
+                                <th>V Code</th>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Status</th>
+                                <th>Date</th>
+                                <th width="70px">Action</th>
+                                <th>Mail</th>
+                            </tr>
+                            <tr class="filters filter-row">
+                                <th><input type="text" class="form-control form-control-sm" placeholder="Search Code" /></th>
+                                <th><input type="text" class="form-control form-control-sm" placeholder="Search Name" /></th>
+                                <th><input type="text" class="form-control form-control-sm" placeholder="Search Email" /></th>
+                                <th>
+                                    <select class="form-select form-select-sm">
+                                        <option value="">All</option>
+                                        <option value="Registered">Registered</option>
+                                        <option value="Pending">Pending</option>
+                                    </select>
+                                </th>
+                                <th><input type="text" class="form-control form-control-sm datepicker" placeholder="dd-mm-yyyy" /></th>
+                                <th></th>
+                                <th></th>
+                            </tr>
+                        </thead>
+
+
+
+                        <tbody>
+                            @foreach (var v in Model)
+                            {
+                                <tr>
+                                    <td>@v.Vendor_Code</td>
+                                    <td>@v.Vendor_Name</td>
+                                    <td>@v.Vendor_Email</td>
+                                    <td>
+                                        @if (v.Flag == 1)
+                                        {
+                                            <span class="badge bg-success">Registered</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-warning text-dark">Pending</span>
+                                        }
+                                    </td>
+                                    <td>@v.ins_dt?.ToString("dd-MM-yyyy")</td>
+                                    <td>
+                                        @if (v.Flag == 1)
+                                        {
+                                            <span class="text-success fw-bold" title="Approved">
+                                                <i class="bi bi-check-circle-fill"></i>
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <button type="button" class="btn btn-sm btn-primary editBtn" data-bs-toggle="tooltip" data-bs-placement="top" title="Edit">
+                                                <i class="bi bi-pencil-square"></i>
+                                            </button>
+
+                                            <button type="button" class="btn btn-sm btn-warning updateBtn d-none" data-bs-toggle="tooltip" data-bs-placement="top" title="Update">
+                                                <i class="bi bi-check-circle"></i>
+                                            </button>
+
+                                            <button type="button" class="btn btn-sm btn-danger cancelBtn d-none" data-bs-toggle="tooltip" data-bs-placement="top" title="Cancel">
+                                                <i class="bi bi-x-circle"></i>
+                                            </button>
+
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (v.Flag == 1)
+                                        {
+                                            <span class="text-success fw-bold" title="Approved">
+                                                <i class="bi bi-check-circle-fill"></i>
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <button type="button" class="btn btn-sm btn-warning sendMailBtn" data-bs-toggle="tooltip" data-bs-placement="top" title="Send Mail">
+                                                <i class="bi bi-envelope-fill"></i>
+                                            </button>
+                                        }
+                                    </td>
+
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+
+            var table = $('#vendorTable').DataTable({
+                orderCellsTop: true,
+                fixedHeader: true,
+                columnDefs: [
+                    { orderable: true, targets: [0, 1, 2, 3, 4] },
+                    { orderable: false, targets: [5, 6] }
+                ],
+                initComplete: function () {
+                    $('#vendorTable thead tr.filter-row th')
+                        .removeClass('sorting sorting_asc sorting_desc');
+                }
+            });
+
+            $('#vendorTable thead tr.filter-row th').each(function (i) {
+                $('input, select', this).on('keyup change', function () {
+                    table.column(i).search(this.value).draw();
+                });
+            });
+
+            $('.datepicker').datepicker({
+                format: 'dd-mm-yyyy',
+                autoclose: true
+            });
+
+            // EDIT MODE
+            $('#vendorTable tbody').on('click', '.editBtn', function () {
+                var row = $(this).closest('tr');
+                $(this).addClass('d-none');
+                row.find('.updateBtn, .cancelBtn').removeClass('d-none');
+
+                var currentEmail = row.find('td:eq(2)').text().trim();
+                row.data('originalEmail', currentEmail);
+
+                row.find('td:eq(2)').html('<input type="email" class="form-control" value="' + currentEmail + '">');
+            });
+
+            // CANCEL MODE
+            $('#vendorTable tbody').on('click', '.cancelBtn', function () {
+                var row = $(this).closest('tr');
+                var originalEmail = row.data('originalEmail');
+
+                if (originalEmail !== undefined) {
+                    row.find('td:eq(2)').html(originalEmail);
+                }
+
+                row.find('.editBtn').removeClass('d-none');
+                row.find('.updateBtn, .cancelBtn').addClass('d-none');
+            });
+
+            // UPDATE EMAIL
+            $('#vendorTable tbody').on('click', '.updateBtn', function () {
+
+                var $btn = $(this);
+                var row = $btn.closest('tr');
+                var emailCell = row.find('td:eq(2)');
+                var updatedEmail = emailCell.find('input').length ? emailCell.find('input').val().trim() : emailCell.text().trim();
+
+                $btn.prop('disabled', true);
+
+                Swal.fire({
+                    title: 'Validating Email...',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    didOpen: () => Swal.showLoading()
+                });
+
+                $.ajax({
+                    type: 'POST',
+                    url: '@Url.Action("ValidateEmail", "Admin")',
+                    data: JSON.stringify({ email: updatedEmail }),
+                    contentType: 'application/json; charset=utf-8',
+                    dataType: 'json',
+                    complete: function () {
+                        $btn.prop('disabled', false);
+                    },
+                    success: function (response) {
+                        Swal.close();
+
+                        if (response.status === 'Valid') {
+
+                            $.ajax({
+                                type: 'POST',
+                                url: '@Url.Action("UpdateVendorEmail", "VendorList")',
+                                data: JSON.stringify({
+                                    vendorId: row.find('td:eq(0)').text().trim(),
+                                    email: updatedEmail
+                                }),
+                                contentType: 'application/json; charset=utf-8',
+                                dataType: 'json',
+                                success: function (updateResponse) {
+                                    Swal.close();
+
+                                    if (updateResponse.status === 'Success') {
+                                        Swal.fire('Success', 'Mail is Valid and Updated!', 'success');
+                                        emailCell.html(updatedEmail);
+
+                                        row.find('.editBtn').removeClass('d-none');
+                                        row.find('.updateBtn, .cancelBtn').addClass('d-none');
+
+                                    } else {
+                                        Swal.fire('Error', 'Mail is Invalid!', 'error');
+                                    }
+                                },
+                                error: function () {
+                                    Swal.close();
+                                    Swal.fire('Error', 'Error checking email', 'error');
+                                }
+                            });
+                        }
+                    }
+                });
+            });
+
+            function bindTooltip() {
+                document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function (el) {
+                    var tip = bootstrap.Tooltip.getInstance(el);
+                    if (tip) tip.dispose();
+                });
+
+                document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function (el) {
+                    new bootstrap.Tooltip(el);
+                });
+            }
+
+            bindTooltip();
+        });
+    </script>
+
+    <script>
+        $('#vendorTable tbody').on('click', '.sendMailBtn', function () {
+
+            var row = $(this).closest('tr');
+            var vendorCode = row.find('td:eq(0)').text().trim();
+            var vendorName = row.find('td:eq(1)').text().trim();
+            var vendorEmail = row.find('td:eq(2)').text().trim();
+
+            Swal.fire({
+                title: 'Send Mail?',
+                text: "Do you want to send mail to " + vendorName + " (" + vendorEmail + ") ?",
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, Send',
+            }).then((result) => {
+
+                if (result.isConfirmed) {
+
+                    Swal.fire({
+                        title: 'Sending Mail...',
+                        allowOutsideClick: false,
+                        didOpen: () => Swal.showLoading()
+                    });
+
+                    $.ajax({
+                        type: 'POST',
+                        url: '@Url.Action("SendVendorMail", "VendorList")',
+                        data: JSON.stringify({
+                            vendorCode: vendorCode,
+                            vendorName: vendorName,
+                            email: vendorEmail
+                        }),
+                        contentType: 'application/json; charset=utf-8',
+                        dataType: 'json',
+
+                        success: function (res) {
+                            Swal.close();
+                            if (res.status === 'Success') {
+                                Swal.fire('Success', 'Mail Sent Successfully!', 'success');
+                            } else {
+                                Swal.fire('Error', 'Mail sending failed.', 'error');
+                            }
+                        },
+                        error: function () {
+                            Swal.close();
+                            Swal.fire('Error', 'Server Error', 'error');
+                        }
+                    });
+                }
+            });
+        });
+    </script>
+}
+
+
+
+
+
+
+
+

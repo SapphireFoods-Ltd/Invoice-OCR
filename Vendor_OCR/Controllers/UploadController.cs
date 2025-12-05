@@ -1,0 +1,300 @@
+﻿using Amazon;
+using Amazon.S3;
+using Amazon.S3.Model;
+using Amazon.S3.Transfer;
+using Amazon.Util.Internal;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Data.SqlClient;
+using Microsoft.Extensions.Configuration;
+using System;
+using System.Collections.Generic;
+using System.Data;
+using System.IO;
+using System.Linq; // Added for .Contains()
+using System.Threading.Tasks;
+using Vendor_OCR.Models;
+using Vendor_OCR.Repositories;
+
+namespace Vendor_OCR.Controllers
+{
+    public class UploadController : Controller
+    {
+        private readonly IConfiguration _configuration;
+        private readonly IAmazonS3 _s3;
+        private readonly IConfiguration _config;
+        private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly VendorRepository _vendorRepo;
+
+
+        public UploadController(IConfiguration configuration, IAmazonS3 s3,
+        IConfiguration config, IHttpContextAccessor httpContextAccessor, VendorRepository vendorRepo)
+        {
+
+            _s3 = s3;
+            _config = config;
+            _configuration = configuration;
+            _httpContextAccessor = httpContextAccessor;
+            _vendorRepo = vendorRepo;
+        }
+
+        //[HttpGet]
+        //public IActionResult Upload()
+        //{
+        //    return View(new UploadModel());
+        //}
+        private string VendorCode =>
+        _httpContextAccessor.HttpContext.Session.GetString("Vendor_Code");
+
+        [HttpGet]
+        public IActionResult Upload(int? id = null)
+        {
+            var model = new UploadModel();
+
+            if (id.HasValue)
+            {
+                using (SqlConnection con = new SqlConnection(_configuration.GetConnectionString("SqlConnectionString")))
+                {
+                    con.Open();
+                    using (SqlCommand cmd = new SqlCommand("SP_OCR_selectquery", con))
+                    {
+                        cmd.CommandType = CommandType.StoredProcedure;
+                        cmd.Parameters.AddWithValue("@mode", "GetInvoiceById");
+                        cmd.Parameters.AddWithValue("@condition1", id.Value);
+
+                        using (SqlDataReader reader = cmd.ExecuteReader())
+                        {
+                            if (reader.Read())
+                            {
+                                model.InvoiceId = id.Value;
+                                model.ExistingFileName = reader["InvoiceName"].ToString();
+                                model.RejectionRemark = reader["RejectionRemark"].ToString();
+                                model.Remarks = reader["Remarks"].ToString();
+                                model.Mode = "edit";
+                            }
+                        }
+                    }
+                }
+            }
+
+            return View(model);
+        }
+
+
+        [HttpPost]
+        public async Task<IActionResult> Upload(UploadModel model, [FromForm] int totalFilesAttempted)
+        {
+            if (!ModelState.IsValid || model.Files == null || model.Files.Count == 0)
+            {
+                return BadRequest(new
+                {
+                    message = "No valid files were selected for upload.",
+                    processed = 0,
+                    total = totalFilesAttempted,
+                    invalidFileNames = new List<string>()
+                });
+            }
+
+            string vendorCode = HttpContext.Session.GetString("Vendor_Code");
+            string vendorName = HttpContext.Session.GetString("Vendor_Name");
+            string user_type = HttpContext.Session.GetString("user_type");
+            string sap_code = "";
+
+            if (user_type == "5")
+            {
+                vendorCode = HttpContext.Session.GetString("uid");
+                vendorName = HttpContext.Session.GetString("uname");
+                sap_code = HttpContext.Session.GetString("sap_code");
+            }
+
+            if (string.IsNullOrEmpty(vendorCode))
+            {
+                return Unauthorized(new { message = "User session expired. Please log in again." });
+            }
+
+            string connStr = _configuration.GetConnectionString("SqlConnectionString");
+            string uploadPath = "";
+            var allowedExtensions = new[] { ".pdf" };
+            int newInvoiceNumber = 0;
+
+            using (var conn = new SqlConnection(connStr))
+            {
+                await conn.OpenAsync();
+                if (user_type == "5")
+                {
+                    using (var cmd = new SqlCommand("SP_GetLatestInvoiceNumber", conn))
+                    {
+                        cmd.CommandType = CommandType.StoredProcedure;
+                        newInvoiceNumber = Convert.ToInt32(await cmd.ExecuteScalarAsync());
+                    }
+                    uploadPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "tempUploads");
+                }
+                else
+                {
+                    using (var cmd = new SqlCommand("SP_GetLatestInvoiceNumber", conn))
+                    {
+                        cmd.CommandType = CommandType.StoredProcedure;
+                        newInvoiceNumber = Convert.ToInt32(await cmd.ExecuteScalarAsync());
+                    }
+                    uploadPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
+                }
+            }
+
+            if (!Directory.Exists(uploadPath))
+                Directory.CreateDirectory(uploadPath);
+
+            int serialNumber = 1;
+            int processedFilesCount = 0;
+            var invalidFileNames = new List<string>();
+            var transfer = new TransferUtility(_s3);
+            string primaryBucket = _config["AWS:PrimaryBucket"];
+            string secondaryBucket = _config["AWS:SecondaryBucket"];
+            string OtherBucket = _config["AWS:OtherBucket"];
+            string region = _config["AWS:Region"];
+
+            try
+            {
+                if (user_type == "5")
+                {
+                    using (var conn = new SqlConnection(connStr))
+                    {
+                        await conn.OpenAsync();
+                        var uniqueFiles = model.Files.DistinctBy(f => f.FileName);
+
+                        foreach (var file in uniqueFiles)
+                        {
+                            var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+                            if (!allowedExtensions.Contains(extension))
+                            {
+                                invalidFileNames.Add(file.FileName);
+                                continue;
+                            }
+
+                            var originalFileName = Path.GetFileNameWithoutExtension(file.FileName);
+                            var dateString = DateTime.Now.ToString("ddMMyyyy");
+                            var timeString = DateTime.Now.ToString("HHmmss"); // hours, minutes, seconds
+                            var newFileName = $"{originalFileName}_{vendorCode}_{dateString}_{timeString}_{serialNumber}{extension}";
+                            var filePath = Path.Combine(uploadPath, newFileName);
+
+                            using (var stream = new FileStream(filePath, FileMode.Create))
+                            {
+                                await file.CopyToAsync(stream);
+                            }
+
+                            using (var cmd = new SqlCommand("SP_Insert_UploadedInvoice_details", conn))
+                            {
+                                cmd.CommandType = CommandType.StoredProcedure;
+                                cmd.Parameters.AddWithValue("@mode", model.Mode == "edit" ? "UpdateInvoice" : "InsertInvoice");
+
+                                if (model.Mode == "edit")
+                                    cmd.Parameters.AddWithValue("@condition1", model.InvoiceId);
+
+                                cmd.Parameters.AddWithValue("@InvoiceNumber", newInvoiceNumber);
+                                cmd.Parameters.AddWithValue("@InvoiceName", newFileName);
+                                cmd.Parameters.AddWithValue("@raw_Name", file.FileName);
+                                cmd.Parameters.AddWithValue("@Remarks", (object)model.Remarks ?? DBNull.Value);
+                                cmd.Parameters.AddWithValue("@ins_Id", vendorCode);
+                                cmd.Parameters.AddWithValue("@ins_Name", vendorName);
+                                cmd.Parameters.AddWithValue("@ins_dt", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff"));
+                                cmd.Parameters.AddWithValue("@user_type", user_type);
+                                cmd.Parameters.AddWithValue("@sap_code", sap_code);
+
+                                await cmd.ExecuteNonQueryAsync();
+                            }
+
+                            processedFilesCount++;
+                            serialNumber++;
+                        }
+                    }
+                }
+
+                else
+                {
+                    using (var conn = new SqlConnection(connStr))
+                    {
+                        await conn.OpenAsync();
+                        var uniqueFiles = model.Files.DistinctBy(f => f.FileName);
+
+                        foreach (var file in uniqueFiles)
+                        {
+                            var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+                            if (!allowedExtensions.Contains(extension))
+                            {
+                                invalidFileNames.Add(file.FileName);
+                                continue;
+                            }
+
+                            var originalFileName = Path.GetFileNameWithoutExtension(file.FileName);
+                            var dateString = DateTime.Now.ToString("ddMMyyyy");
+
+                            var timeString = DateTime.Now.ToString("HHmmss"); // hours, minutes, seconds
+                            var newFileName = $"{originalFileName}_{vendorCode}_{dateString}_{timeString}_{serialNumber}{extension}";
+
+                            var filePath = Path.Combine(uploadPath, newFileName);
+                            string primaryUrl = $"https://{primaryBucket}.s3.{region}.amazonaws.com/{newFileName}";
+
+                            // Save File
+                            using (var stream = new FileStream(filePath, FileMode.Create))
+                            {
+                                await file.CopyToAsync(stream);
+                            }
+
+                            using (var cmd = new SqlCommand("SP_Insert_UploadedInvoice_details", conn))
+                            {
+                                cmd.CommandType = CommandType.StoredProcedure;
+
+                                cmd.Parameters.AddWithValue("@mode", model.Mode == "edit" ? "UpdateInvoice" : "InsertInvoice");
+
+                                if (model.Mode == "edit")
+                                    cmd.Parameters.AddWithValue("@condition1", model.InvoiceId);
+
+                                //cmd.Parameters.AddWithValue("@mode", "InsertInvoice");
+                                cmd.Parameters.AddWithValue("@InvoiceNumber", newInvoiceNumber);
+                                cmd.Parameters.AddWithValue("@InvoiceName", newFileName);
+                                cmd.Parameters.AddWithValue("@raw_Name", file.FileName);
+                                cmd.Parameters.AddWithValue("@Remarks", (object)model.Remarks ?? DBNull.Value);
+                                cmd.Parameters.AddWithValue("@ins_Id", vendorCode);
+                                cmd.Parameters.AddWithValue("@ins_Name", vendorName);
+                                cmd.Parameters.AddWithValue("@ins_dt", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff"));
+                                cmd.Parameters.AddWithValue("@user_type", user_type);
+                                cmd.Parameters.AddWithValue("@primaryUrl", primaryUrl);
+                                await cmd.ExecuteNonQueryAsync();
+                            }
+
+                            if (user_type == "2")
+                            {
+                                await transfer.UploadAsync(filePath, primaryBucket, newFileName);
+                                await transfer.UploadAsync(filePath, secondaryBucket, newFileName);
+                                await transfer.UploadAsync(filePath, OtherBucket, newFileName);
+                                
+                            }
+
+                            processedFilesCount++;
+                            serialNumber++;
+                        }
+                    }
+                }
+
+                int invalidFilesCount = totalFilesAttempted - processedFilesCount;
+                string responseMessage = processedFilesCount > 0
+                    ? invalidFilesCount > 0
+                        ? $"{processedFilesCount} valid file(s) uploaded successfully. {invalidFilesCount} invalid file(s) ignored."
+                        : $"All {processedFilesCount} file(s) uploaded successfully."
+                    : "Upload failed. No valid files found.";
+
+                return Ok(new
+                {
+                    message = responseMessage,
+                    processed = processedFilesCount,
+                    total = totalFilesAttempted,
+                    invalidFileNames = invalidFileNames
+                });
+            }
+            catch (Exception ex)
+            {
+                _vendorRepo.ErrorLog(ex.Message, VendorCode);
+                return StatusCode(500, new { message = "An internal server error occurred. Please try again." });
+            }
+        }
+
+    }
+}

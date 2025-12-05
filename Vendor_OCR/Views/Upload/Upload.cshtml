@@ -1,0 +1,285 @@
+﻿@model UploadModel
+@using Microsoft.AspNetCore.Http
+@inject IHttpContextAccessor HttpContextAccessor
+
+@{
+    ViewData["Title"] = "Upload Files";
+
+    var role = HttpContextAccessor.HttpContext?.Session.GetString("user_type");
+}
+
+<style>
+    .card-header {
+        font-weight: 600;
+        font-size: 1rem;
+    }
+
+    .text-danger {
+        min-height: 1.25em;
+        font-size: 0.875em;
+        margin-top: 0.25rem;
+    }
+
+    .valid-file {
+        color: #198754;
+        font-weight: 500;
+    }
+
+    .invalid-file {
+        color: #dc3545;
+        font-weight: 500;
+    }
+
+    .file-status-icon {
+        font-size: 1.1rem;
+    }
+</style>
+
+<div class="container mt-5">
+    <div class="card shadow-lg border-0">
+        <div class="card-body">
+
+            <h3 class="mb-4 text-primary fw-semibold text-center">Upload File</h3>
+
+            @*  <a href="javascript:history.back()" class="btn btn-outline-primary"><i class="bi bi-arrow-left"></i> Back</a> *@
+
+            <form asp-action="Upload" method="post" enctype="multipart/form-data" id="uploadForm">
+
+                <input type="hidden" name="totalFilesAttempted" id="totalFilesAttempted" value="0" />
+                <input type="hidden" name="Mode" value="@Model.Mode" />
+                <input type="hidden" name="InvoiceId" value="@Model.InvoiceId" />
+                <input type="hidden" name="ExistingFileName" value="@Model.ExistingFileName" />
+
+                <div class="card mb-4 border-0 shadow-sm">
+                    <div class="card-header bg-light fw-semibold">Upload Details</div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Select Files</label>
+                                @* <input type="file" asp-for="Files" multiple class="form-control" id="fileInput" /> *@
+
+                                @if (Model.Mode == "edit")
+                                {
+                                    <input type="file" asp-for="Files" class="form-control" id="fileInput" />
+                                }
+                                else
+                                {
+                                    <input type="file" asp-for="Files" multiple class="form-control" id="fileInput" />
+                                }
+
+
+                                <small id="fileError" class="text-danger d-none">
+                                    Your selection contains unsupported file types (marked in red). Only valid files will be uploaded.
+                                </small>
+                                @if (Model.Mode == "edit" && !string.IsNullOrEmpty(Model.ExistingFileName))
+                                {
+
+                                    <div class="mt-3 d-flex justify-content-between align-items-center w-100">
+
+                                        <!-- Existing File (Left) -->
+                                        <div class="text-start">
+                                            <h6 class="mb-1">Existing File:</h6>
+
+                                            @if (role == "2")
+                                            {
+                                                <a href="https://invoice-ocr-internal.s3.ap-south-1.amazonaws.com/@Model.ExistingFileName"
+                                                   target="_blank">@Model.ExistingFileName</a>
+                                            }
+                                            else
+                                            {
+                                                <a href="~/tempUploads/@Model.ExistingFileName" target="_blank">@Model.ExistingFileName</a>
+                                            }
+                                        </div>
+
+                                        <!-- Rejection Remark (Right) -->
+                                        <div class="text-end">
+                                            <h6 class="mb-1">Rejection Remark:</h6>
+                                            <span class="text-danger fw-semibold">@Model.RejectionRemark</span>
+                                        </div>
+
+                                    </div>
+
+
+                                }
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Remarks</label>
+                                <textarea asp-for="Remarks" class="form-control" rows="1"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="fileListContainer" class="mt-4" style="display:none;">
+                    <h6 class="fw-semibold">Selected Files Status:</h6>
+                    <div id="fileList" class="list-group"></div>
+                </div>
+
+                <div class="text-end mt-4">
+                    <button type="submit" class="btn btn-outline-primary" disabled><i class="bi bi-upload"></i> Upload</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const fileInput = document.getElementById("fileInput");
+            const fileError = document.getElementById("fileError");
+            const fileListContainer = document.getElementById("fileListContainer");
+            const fileList = document.getElementById("fileList");
+            const form = document.getElementById("uploadForm");
+            const submitBtn = form.querySelector('button[type="submit"]');
+            const totalFilesAttemptedInput = document.getElementById("totalFilesAttempted");
+
+
+            const allowedExtensions = ['.pdf'];
+            let filesToUpload = [];
+
+            function getFileExtension(filename) {
+                if (!filename || typeof filename !== 'string') return '';
+                const dotIndex = filename.lastIndexOf('.');
+                if (dotIndex < 1) return '';
+                return filename.substring(dotIndex).toLowerCase().trim();
+            }
+
+            fileInput.addEventListener("change", async function () {
+                const selectedFiles = Array.from(fileInput.files);
+                filesToUpload = [];
+                fileList.innerHTML = "";
+                fileError.classList.add("d-none");
+                fileListContainer.style.display = "none";
+
+                if (selectedFiles.length === 0) {
+                    submitBtn.disabled = true;
+                    totalFilesAttemptedInput.value = "0";
+                    return;
+                }
+
+                Swal.fire({
+                    title: 'Processing Files...',
+                    allowOutsideClick: false,
+                    didOpen: () => Swal.showLoading()
+                });
+
+                let hasInvalidFiles = false;
+                let totalFilesProcessed = 0;
+
+                for (const file of selectedFiles) {
+                    const fileExt = getFileExtension(file.name);
+
+
+                    if (fileExt === '.zip' || fileExt === '.rar') {
+                        try {
+
+                            const zip = await new JSZip().loadAsync(file);
+                            for (const [filename, zipEntry] of Object.entries(zip.files)) {
+                                if (zipEntry.dir || filename.startsWith('__MACOSX/')) continue;
+
+
+                                totalFilesProcessed++;
+
+                                const innerExt = getFileExtension(filename);
+                                const listItem = document.createElement("div");
+                                listItem.className = "list-group-item d-flex justify-content-between align-items-center";
+
+                                if (allowedExtensions.includes(innerExt)) {
+                                    const blob = await zipEntry.async('blob');
+                                    const extractedFile = new File([blob], filename, { type: blob.type });
+                                    filesToUpload.push(extractedFile);
+                                    listItem.innerHTML = `<span class="valid-file">${filename}</span> <i class="bi bi-check-circle-fill text-success file-status-icon"></i>`;
+                                } else {
+                                    hasInvalidFiles = true;
+                                    listItem.innerHTML = `<span class="invalid-file">${filename}</span> <i class="bi bi-x-circle-fill text-danger file-status-icon"></i>`;
+                                }
+                                fileList.appendChild(listItem);
+                            }
+                        } catch (err) {
+                           Swal.fire('Error', 'Could not read a compressed file. It may be corrupt.', 'error');
+                           fileInput.value = "";
+                           Swal.close();
+                           return;
+                        }
+                    } else {
+
+                        totalFilesProcessed++;
+                        const fileItem = document.createElement("div");
+                        fileItem.className = "list-group-item d-flex justify-content-between align-items-center";
+                        if (allowedExtensions.includes(fileExt)) {
+                            filesToUpload.push(file);
+                            fileItem.innerHTML = `<span class="valid-file">${file.name}</span> <i class="bi bi-check-circle-fill text-success file-status-icon"></i>`;
+                        } else {
+                            hasInvalidFiles = true;
+                            fileItem.innerHTML = `<span class="invalid-file">${file.name}</span> <i class="bi bi-x-circle-fill text-danger file-status-icon"></i>`;
+                        }
+                        fileList.appendChild(fileItem);
+                    }
+                }
+
+                totalFilesAttemptedInput.value = totalFilesProcessed;
+                Swal.close();
+                fileListContainer.style.display = "block";
+                submitBtn.disabled = filesToUpload.length === 0;
+
+                if (hasInvalidFiles) {
+                    fileError.classList.remove("d-none");
+                }
+            });
+            form.addEventListener("submit", function (e) {
+                e.preventDefault();
+                if (filesToUpload.length === 0) {
+                    Swal.fire('No Valid Files', 'There are no valid files to upload.', 'error');
+                    return;
+                }
+                submitBtn.disabled = true;
+                const formData = new FormData(form);
+
+                filesToUpload.forEach(file => { formData.append("Files", file); });
+                Swal.fire({
+                    title: 'Uploading...',
+                    text: `Uploading ${filesToUpload.length} valid file(s).`,
+                    allowOutsideClick: false,
+                    didOpen: () => Swal.showLoading()
+                });
+                fetch(form.action, { method: "POST", body: formData })
+                .then(response => response.json().then(data => ({ status: response.status, body: data })))
+                .then(({ status, body }) => {
+                    let title = 'Upload Summary';
+                    let icon = 'success';
+                    const totalAttempted = body.total;
+                    const processedCount = body.processed;
+                    const invalidCount = totalAttempted - processedCount;
+                    if (processedCount === 0 && totalAttempted > 0) {
+                        title = 'Upload Failed';
+                        icon = 'error';
+                    } else if (invalidCount > 0) {
+                        title = 'Partial Upload Complete';
+                        icon = 'warning';
+                    }
+                    let htmlContent = `
+                        <div style="text-align: left; padding: 0 1rem;">
+                            <p>${body.message}</p><hr>
+                            <p><strong>Total Files Processed:</strong> ${totalAttempted}</p>
+                            <p><strong>Files Uploaded:</strong> ${processedCount}</p>
+                            <p><strong>Files Ignored:</strong> ${invalidCount}</p>
+                        </div>`;
+                        Swal.fire({ icon: icon, title: title, html: htmlContent }).then(() => {
+
+                               window.location.href = '/Home/Index';
+                        });
+                    if (status !== 200) { submitBtn.disabled = false; }
+                })
+                .catch(() => {
+                    Swal.fire('Network Error', 'Could not connect to the server.', 'error');
+                    submitBtn.disabled = false;
+                });
+            });
+        });
+    </script>
+}

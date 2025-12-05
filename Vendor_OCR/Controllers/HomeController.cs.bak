@@ -1,0 +1,39 @@
+using System.Diagnostics;
+using Microsoft.AspNetCore.Mvc;
+using Vendor_OCR.Models;
+
+namespace Vendor_OCR.Controllers
+{
+    public class HomeController : Controller
+    {
+        private readonly ILogger<HomeController> _logger;
+
+        public HomeController(ILogger<HomeController> logger)
+        {
+            _logger = logger;
+        }
+
+        public IActionResult Index()
+        {
+            var utype = HttpContext.Session.GetString("user_type");
+
+            if (string.IsNullOrEmpty(utype))
+            {
+                return View("~/Views/No Access/NoAccess.cshtml");
+            }
+
+            return View();
+        }
+
+        public IActionResult Privacy()
+        {
+            return View();
+        }
+
+        [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
+        public IActionResult Error()
+        {
+            return View("~/Views/Error/Error.cshtml");
+        }
+    }
+}

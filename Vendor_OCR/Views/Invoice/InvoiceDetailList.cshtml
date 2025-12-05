@@ -1,0 +1,75 @@
+﻿@model IEnumerable<Vendor_OCR.Models.Invoice.InvoiceDetailList>
+
+<div class="container mt-5">
+    <div class="card shadow-lg border-0">
+        <div class="card-body">
+            <h3 class="mb-4 text-primary fw-semibold text-center">Invoice List</h3>
+
+            <div class="card mb-4 border-0 shadow-sm">
+                <div class="card-header bg-light fw-semibold">Invoice List</div>
+                <div class="card-body">
+                    <table id="InvoiceTable" class="table table-hover table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Id</th>
+                                <th>Invoice Number</th>
+                                <th>Invoice Date</th>
+                                <th>Purchase Order</th>
+                                <th>Vendor Name</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var v in Model)
+                            {
+                                <tr data-id="@v.rId">
+                                    
+                                    <td>@v.rId</td>
+                                    <td>@v.InvoiceId</td>
+                                    <td>@v.InvoiceDate</td>
+                                    <td>@v.PurchaseOrder</td>
+                                    <td>@v.VendorName</td>
+                                    <td>
+                                        <a asp-controller="InvoiceDetail" asp-action="InvoiceDetail" asp-route-Rid="@v.rId"
+                                           class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-pencil-square"></i> Edit
+                                        </a>
+
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+@section Scripts {
+    <script>
+        // ✅ Table with filter cards
+        $(document).ready(function () {
+            var table = $('#InvoiceTable').DataTable({
+                               orderCellsTop: true,
+                fixedHeader: true,
+                columnDefs: [
+                    { orderable: true, targets: [0, 1, 2, 3] },
+                    { orderable: false, targets: [4,5] }
+                ],
+                initComplete: function () {
+                    $('#vendorTable thead tr.filter-row th')
+                        .removeClass('sorting sorting_asc sorting_desc');
+                }
+            });
+
+
+        });
+    </script>
+}
+

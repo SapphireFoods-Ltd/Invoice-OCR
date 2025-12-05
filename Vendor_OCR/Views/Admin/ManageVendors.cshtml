@@ -1,0 +1,486 @@
+﻿@{
+    ViewData["Title"] = "Manage Vendors";
+}
+<style>
+    .multi-dropdown {
+        position: relative;
+    }
+
+        .multi-dropdown .dropdown-menu {
+            display: none;
+            position: absolute;
+            z-index: 1000;
+            background: #fff;
+            border: 1px solid #ccc;
+            padding: 8px;
+            max-height: 220px;
+            overflow: auto;
+            width: 260px;
+        }
+
+        .multi-dropdown.open .dropdown-menu {
+            display: block;
+        }
+
+        .multi-dropdown .btn {
+            width: 100%;
+            text-align: left;
+        }
+
+        .multi-dropdown .item {
+            padding: 4px 6px;
+        }
+
+    .is-invalid {
+        border-color: red !important;
+    }
+
+    .btn-outline-danger {
+        border-color: red !important;
+        color: red !important;
+    }
+</style>
+
+<div class="container mt-5">
+    <div class="card shadow-lg border-0">
+        <div class="card-body">
+            <h3 class="mb-4 text-primary fw-semibold text-center">Manage Vendors</h3>
+
+            <form asp-action="AddVendor" asp-controller="Admin" method="post" id="vendorForm">
+
+                <!-- Vendor Details -->
+                <div class="card mb-4 border-0 shadow-sm">
+                    <div class="card-header bg-light fw-semibold">Vendor Details</div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Vendor Name</label>
+                                <input name="VendorName" id="VendorName" class="form-control shadow-sm" required />
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Email ID</label>
+                                <span id="lblMessage" class="ms-2 fw-bold small"></span>
+                                <input name="Email" id="txtEmail" class="form-control shadow-sm" required />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Payment Details -->
+                <div class="card mb-4 border-0 shadow-sm">
+                    <div class="card-header bg-light fw-semibold">Payment Details</div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Terms of Payment</label>
+                                <select id="termsOfPayment" class="form-select shadow-sm">
+                                    <option value="">-- Select --</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Payment Method</label>
+                                <div class="multi-dropdown" id="paymentDropdown">
+                                    <button type="button" class="btn btn-outline-secondary w-100 shadow-sm" id="paymentToggle">-- Select --</button>
+                                    <div class="dropdown-menu" id="paymentList"></div>
+                                </div>
+                                <input type="hidden" id="paymentMethodHidden" />
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Order Currency</label>
+                                <select id="currency" class="form-select shadow-sm">
+                                    <option value="">-- Select --</option>
+                                    <option value="INR">INR</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Business Details -->
+                <div class="card mb-4 border-0 shadow-sm">
+                    <div class="card-header bg-light fw-semibold">Business Details</div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-3">
+                                <label class="form-label fw-semibold">Category</label>
+                                <select id="category" class="form-select shadow-sm">
+                                    <option value="">-- Select --</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-3">
+                                <label class="form-label fw-semibold">Business Area</label>
+                                <select id="businessArea" class="form-select shadow-sm">
+                                    <option value="">-- Select --</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-3">
+                                <label class="form-label fw-semibold">Vendor Group</label>
+                                <select id="vendorGroup" class="form-select shadow-sm">
+                                    <option value="">-- Select --</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-3">
+                                <label class="form-label fw-semibold">Role</label>
+                                <input type="text" id="role" class="form-control shadow-sm" disabled />
+                            </div>
+
+                            <div class="col-md-3">
+                                <label class="form-label fw-semibold">Company Code</label>
+                                <select id="companyCode" class="form-select shadow-sm">
+                                    <option value="">-- Select --</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-3">
+                                <label class="form-label fw-semibold">Purchase Org</label>
+                                <input type="text" id="purorg" class="form-control shadow-sm" disabled />
+                            </div>
+
+                            <div class="col-md-3">
+                                <label class="form-label fw-semibold">Search Term</label>
+                                <input type="text" id="searchTerm" class="form-control shadow-sm" disabled />
+                            </div>
+
+                            <div class="col-md-3">
+                                <label class="form-label fw-semibold">Store Name</label>
+                                <input type="text" id="storeName" class="form-control shadow-sm" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <div class="text-end mt-4">
+                    <button type="submit" id="btnAddVendor" class="btn btn-primary px-4 shadow-sm">
+                        <i class="bi bi-envelope me-1"></i> Send Mail
+                    </button>
+                </div>
+            </form>
+
+            @if (ViewBag.Message != null)
+            {
+                <div class="alert alert-success mt-3 shadow-sm">@ViewBag.Message</div>
+            }
+
+            <hr class="mt-4" />
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Clean modern look: all fields white, disabled ones light gray */
+    .form-control,
+    .form-select {
+        background-color: #ffffff !important;
+        color: #212529;
+        border: 1px solid #ced4da;
+    }
+
+    .form-control:disabled,
+    .form-select:disabled,
+    input[readonly],
+    select[readonly] {
+        background-color: #f1f1f1 !important;
+        color: #6c757d !important;
+        opacity: 1;
+        cursor: not-allowed;
+    }
+
+    .form-control:focus,
+    .form-select:focus {
+        border-color: #86b7fe;
+        box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+    }
+</style>
+
+
+<input type="hidden" id="empCode" value="@ViewBag.EmpCode" />
+
+@section Scripts {
+  
+    <script>
+        $(document).ready(function () {
+
+            // Load vendor groups
+            $.ajax({
+                url: '/Admin/GetVendorGroups',
+                type: 'GET',
+                success: function (data) {
+                    let ddl = $('#vendorGroup');
+                    $.each(data, function (i, item) {
+                        ddl.append('<option value="' + item.id + '">' + item.groupName + '</option>');
+                    });
+                }
+            });
+
+            // Load categories
+            $.ajax({
+                url: '/Admin/GetCategory',
+                type: 'GET',
+                success: function (data) {
+                    let ddl = $('#category');
+                    $.each(data, function (i, item) {
+                        ddl.append('<option value="' + item.id + '">' + item.category + '</option>');
+                    });
+                }
+            });
+
+
+            
+
+             $.ajax({
+                url: '/Admin/GetPayTerm',
+                type: 'GET',
+                success: function (data) {
+                    let ddl = $('#termsOfPayment');
+                    $.each(data, function (i, item) {
+                        ddl.append('<option value="' + item.id + '">' + item.paytermStatus + '</option>');
+                    });
+                }
+            });
+
+           $('#vendorGroup').on('change', function () {
+            let vendorGroupId = $(this).val();
+            if (vendorGroupId) {
+                $.ajax({
+                    url: '/Admin/GetVendorDetailsByGroup',
+                    type: 'GET',
+                    data: { vendorGroupId: vendorGroupId },
+                    success: function (data) {
+                        if (data) {
+                            $('#category').val(data.categoryId);
+                            $('#role').val(data.role);
+                            $('#purorg').val(data.purchaseOrg);
+                            $('#searchTerm').val(data.searchTerm);
+                        }
+                    },
+                    error: function (err) {
+                        console.error("Error loading details by vendor group:", err);
+                    }
+                });
+            }
+        });
+
+        $(document).ready(function () {
+            var $dropdown = $('#paymentDropdown');
+            var $list = $('#paymentList');
+            var $toggle = $('#paymentToggle');
+            var $hidden = $('#paymentMethodHidden');
+
+            // fetch data
+            $.ajax({
+                url: '/Admin/GetPaymentMethod',
+                type: 'GET',
+                success: function (data) {
+                    $list.empty();
+                    $.each(data, function(i, item) {
+                        var html = '<div class="item"><label><input type="checkbox" class="pm-check" value="' + item.id + '"> ' + item.paymentMethod + '</label></div>';
+                        $list.append(html);
+                    });
+                }
+            });
+
+            // toggle open/close
+            $toggle.on('click', function (e) {
+                e.stopPropagation();
+                $dropdown.toggleClass('open');
+            });
+
+            // clicking outside closes
+            $(document).on('click', function () {
+                $dropdown.removeClass('open');
+            });
+
+            // when a checkbox changes update hidden field and button label
+            $list.on('change', '.pm-check', function () {
+                var vals = [];
+                var labels = [];
+                $list.find('.pm-check:checked').each(function () {
+                    vals.push($(this).val());
+                    labels.push($(this).parent().text().trim());
+                });
+                $hidden.val(vals.join(',')); // store CSV ids for submission
+                $toggle.text(labels.length ? labels.join(', ') : '-- Select --');
+            });
+
+            // helper: get selected ids anywhere
+            window.getSelectedPayments = function() {
+                return $('#paymentMethodHidden').val() ? $('#paymentMethodHidden').val().split(',') : [];
+            };
+        });
+
+
+
+        // --- When Category changes ---
+        $('#category').on('change', function () {
+            let categoryId = $(this).val();
+            if (categoryId) {
+                $.ajax({
+                    url: '/Admin/GetVendorDetailsByCategory',
+                    type: 'GET',
+                    data: { categoryId: categoryId },
+                    success: function (response) {
+                        if (response.success && response.data) {
+                            let data = response.data;
+                            $('#vendorGroup').val(data.vendorGroupId);
+                            $('#role').val(data.role);
+                            $('#purorg').val(data.purchaseOrg);
+                            $('#searchTerm').val(data.searchTerm);
+                        } else {
+                            // 🧹 Clear all fields if no record
+                            $('#vendorGroup').val('');
+                            $('#role').val('');
+                            $('#purorg').val('');
+                            $('#searchTerm').val('');
+                        }
+                    },
+                    error: function (err) {
+                        console.error("Error loading details by category:", err);
+                    }
+                });
+            }
+        });
+
+        });
+
+         $(document).ready(function () {
+
+             $('#btnAddVendor').on('click', function (e) {
+                e.preventDefault();
+
+                let isValid = true;
+                $('.is-invalid').removeClass('is-invalid');
+                $('#paymentToggle').removeClass('btn-outline-danger');
+
+                // Dropdowns validation
+                const dropdowns = ['#termsOfPayment', '#currency', '#category', '#vendorGroup'];
+                dropdowns.forEach(function (selector) {
+                    if ($(selector).val() === "") {
+                        $(selector).addClass('is-invalid');
+                        isValid = false;
+                    }
+                });
+
+                // Payment method validation
+                const selectedPayments = $('#paymentMethodHidden').val();
+                if (!selectedPayments || selectedPayments.trim() === "") {
+                    $('#paymentToggle').addClass('btn-outline-danger');
+                    isValid = false;
+                }
+
+                if (!isValid) {
+                    alert("⚠️ Please fill all required fields before submitting.");
+                    return;
+                }
+
+                // Prepare vendor data
+                let selectedPaymentsArr = [];
+                $('#paymentList input[type=checkbox]:checked').each(function () {
+                    selectedPaymentsArr.push($(this).val());
+                });
+
+                const vendorData = {
+                    VendorName: $('#VendorName').val(),
+                    Email: $('#txtEmail').val(),
+                    TermsOfPayment: $('#termsOfPayment').val(),
+                    PaymentMethods: selectedPaymentsArr.join(','),
+                    Currency: $('#currency').val(),
+                    Category: $('#category').val(),
+                    BusinessArea: $('#businessArea').val(),
+                    VendorGroup: $('#vendorGroup').val(),
+                    CompanyCode: $('#companyCode').val(),
+                    Role: $('#role').val(),
+                    PurOrg: $('#purorg').val(),
+                    SearchTerm: $('#searchTerm').val(),
+                    StoreName: $('#storeName').val(),
+                    empcode: $('#empCode').val() 
+                };
+
+                // Call backend to Save + Send Mail
+                $.ajax({
+                    url: '/Admin/AddVendor',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(vendorData),
+                    success: function (response) {
+                        alert("✅ " + response.message);
+                        $('#vendorForm')[0].reset();
+                        $('#btnSendMail').prop('disabled', true);
+                        $('#lblMessage').text('');
+                    },
+                    error: function (xhr) {
+                        alert("❌ " + (xhr.responseJSON?.message || "Something went wrong"));
+                    }
+                });
+            });
+
+
+        });
+
+ 
+       
+       @Html.Raw(@"
+$(document).ready(function () {
+    const $email = $('#txtEmail');
+    const $message = $('#lblMessage');
+    const $btn = $('#btnAddVendor');
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    // Initially disable button
+    $btn.prop('disabled', true);
+
+    // Use blur event instead of input
+    $email.on('blur', function () {
+        const email = $email.val().trim();
+        $message.text('').removeClass('text-success text-danger text-warning');
+        $btn.prop('disabled', true); // disable until validation passes
+
+        if (email === '') return;
+
+        if (!emailRegex.test(email)) {
+            $message.text('❌ Invalid format').addClass('text-danger');
+            return;
+        }
+
+        $message.text('Checking email...').addClass('text-warning');
+
+        $.ajax({
+            type: 'POST',
+            url: '" + Url.Action("ValidateEmail", "Admin") + @"',
+            data: JSON.stringify({ email: email }),
+            contentType: 'application/json; charset=utf-8',
+            dataType: 'json',
+            success: function (response) {
+                const status = response.status;
+                if (status === 'Valid') {
+                    $message.text('✅ Valid Email')
+                            .removeClass('text-warning text-danger')
+                            .addClass('text-success');
+                    $btn.prop('disabled', false); // enable button
+                } else {
+                    $message.text('❌ Invalid Email')
+                            .removeClass('text-warning text-success')
+                            .addClass('text-danger');
+                    $btn.prop('disabled', true);
+                }
+            },
+            error: function () {
+                $message.text('⚠️ Error checking email')
+                        .removeClass('text-success')
+                        .addClass('text-danger');
+                $btn.prop('disabled', true);
+            }
+        });
+    });
+});
+")
+
+    </script>
+}
+

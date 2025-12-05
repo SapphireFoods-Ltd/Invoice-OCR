@@ -1,0 +1,435 @@
+﻿@model Vendor_OCR.Models.VendorRegisterModel
+@{
+    ViewData["Title"] = "Vendor Registration";
+    Layout = "_BlankLayout";
+}
+
+<style>
+    .multi-dropdown {
+        position: relative;
+    }
+
+    .container, .container-fluid, main {
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+    }
+
+        .multi-dropdown .dropdown-menu {
+            display: none;
+            position: absolute;
+            z-index: 1000;
+            background: #fff;
+            border: 1px solid #ccc;
+            padding: 8px;
+            max-height: 220px;
+            overflow: auto;
+            width: 260px;
+        }
+
+        .multi-dropdown.open .dropdown-menu {
+            display: block;
+        }
+
+        .multi-dropdown .btn {
+            width: 100%;
+            text-align: left;
+        }
+
+        .multi-dropdown .item {
+            padding: 4px 6px;
+        }
+
+    .is-invalid {
+        border-color: red !important;
+    }
+
+    .btn-outline-danger {
+        border-color: red !important;
+        color: red !important;
+    }
+</style>
+
+
+
+<div class="container-fluid">
+    <div class="card shadow-lg border-0 w-100 mx-auto" style="max-width: 1200px;">
+        <div class="card-body p-5">
+            <h3 class="mb-4 text-primary fw-semibold text-center">Vendor Registration</h3>
+
+            
+            <form id="vendorRegisterForm" method="post">
+                
+                        <div class="row g-4">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Vendor Name</label>
+                                <input asp-for="Name" class="form-control shadow-sm" readonly />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Email ID</label>
+                                <input asp-for="Email" class="form-control shadow-sm" readonly />
+                            </div>
+
+                            <!-- Password -->
+                            <div class="col-md-6 position-relative">
+                                <label class="form-label fw-semibold">Password</label>
+                                <input type="password" id="txtPassword" class="form-control shadow-sm" placeholder="Enter Password" required />
+                                <i class="bi bi-eye-slash toggle-password" style="position:absolute; top:38px; right:20px; cursor:pointer;"></i>
+                                <div id="passwordValidation" class="small mt-1 fw-semibold"></div>
+                            </div>
+
+                            <!-- Confirm Password -->
+                            <div class="col-md-6 position-relative">
+                                <label class="form-label fw-semibold">Confirm Password</label>
+                                <input type="password" id="txtConfirmPassword" class="form-control shadow-sm" placeholder="Confirm Password" required />
+                                <i class="bi bi-eye-slash toggle-password" style="position:absolute; top:38px; right:20px; cursor:pointer;"></i>
+                                <div id="passwordMessage" class="small mt-1 fw-semibold"></div>
+                            </div>
+
+                            <!-- Send OTP -->
+                            <div class="col-md-2" style="padding-top: 33px;">
+                                <button type="button" id="btnSendOtp" class="btn btn-outline-primary">Send OTP</button>
+                            </div>
+
+                            <!-- OTP Input -->
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Email Verification</label>
+                                <div class="input-group">
+                                    <input type="text" id="txtOtp" class="form-control shadow-sm" placeholder="Enter OTP" disabled />
+                                </div>
+                                <div id="otpMessage" class="small mt-1 fw-semibold"></div>
+                            </div>
+
+                            <!-- Hidden OTP storage -->
+                            <input type="hidden" id="generatedOtp" />
+                        </div>
+
+
+
+                <div class="col-md-12 text-end">
+                    <button type="submit" id="btnRegister" class="btn btn-success px-4 shadow-sm">
+                        <span class="btn-text"><i class="bi bi-person-check-fill me-1"></i> Register</span>
+                        <span class="spinner-border spinner-border-sm d-none ms-2" id="btnLoader"></span>
+                    </button>
+
+
+                        </div>
+                                   
+            </form>
+        </div>
+    </div>
+</div>
+<input type="hidden" id="vendorCode" value="@Context.Request.Query["vendorCode"]" />
+
+@section Scripts {
+    <script>
+        
+
+
+        //  $(document).ready(function () {
+
+        //     $('#btnRegister').on('click', function (e) {
+        //         e.preventDefault(); // ✅ prevent any accidental form submission
+
+        //         let isValid = true;
+
+        //         // Clear previous highlights
+        //         $('.is-invalid').removeClass('is-invalid');
+        //         $('#paymentToggle').removeClass('btn-outline-danger');
+
+        //         // Check if email OTP verified
+        //         if (!$("#txtOtp").data("verified")) {
+        //             alert("⚠️ Please verify your email OTP before submitting.");
+        //             return;
+        //         }
+
+        //         // Password validation
+        //         const password = $('#txtPassword').val().trim();
+        //         const confirmPassword = $('#txtConfirmPassword').val().trim();
+
+        //         if (password === "") {
+        //             $('#txtPassword').addClass('is-invalid');
+        //             isValid = false;
+        //         }
+
+        //         if (confirmPassword === "" || confirmPassword !== password) {
+        //             $('#txtConfirmPassword').addClass('is-invalid');
+        //             isValid = false;
+        //         }
+
+            
+               
+        //         // ❌ If invalid, stop here before creating vendorData
+        //         if (!isValid) {
+        //             alert("⚠️ Please fill all required fields before submitting.");
+        //             return;
+        //         }
+
+        //         const vendorData = {
+        //             VendorCode: $('#vendorCode').val(),
+                    
+        //             Password: password,
+        //         };
+
+        //         // ✅ Send data to controller
+        //         $.ajax({
+        //             url: '/RegisterVendor/SaveVendor',
+        //             type: 'POST',
+        //             contentType: 'application/json',
+        //             data: JSON.stringify(vendorData),
+        //             success: function (response) {
+        //                 alert("✅ " + response.message);
+        //                 $('#vendorRegisterForm')[0].reset();
+        //             },
+        //             error: function (xhr) {
+        //                 alert("❌ " + (xhr.responseJSON?.message || "Something went wrong"));
+        //             }
+        //         });
+        //     });
+
+        // });
+
+                $('#btnRegister').on('click', function (e) {
+            e.preventDefault();
+
+            let $btn = $(this);
+            let $loader = $('#btnLoader');
+
+            // Disable button + show loader
+            $btn.attr("disabled", true);
+            $loader.removeClass("d-none");
+            $btn.find(".btn-text").html(`<i class="bi bi-hourglass-split me-1"></i> Processing...`);
+
+            let isValid = true;
+            $('.is-invalid').removeClass('is-invalid');
+
+            // OTP check
+            if (!$("#txtOtp").data("verified")) {
+                resetButton();
+                alert("⚠️ Please verify your email OTP before submitting.");
+                return;
+            }
+
+            // Password validation
+            const password = $('#txtPassword').val().trim();
+            const confirmPassword = $('#txtConfirmPassword').val().trim();
+
+            if (password === "") {
+                $('#txtPassword').addClass('is-invalid');
+                isValid = false;
+            }
+
+            if (confirmPassword === "" || confirmPassword !== password) {
+                $('#txtConfirmPassword').addClass('is-invalid');
+                isValid = false;
+            }
+
+            if (!isValid) {
+                resetButton();
+                alert("⚠️ Please fill all required fields.");
+                return;
+            }
+
+            const vendorData = {
+                VendorCode: $('#vendorCode').val(),
+                Password: password
+            };
+
+            // $.ajax({
+            //     url: '/RegisterVendor/SaveVendor',
+            //     type: 'POST',
+            //     contentType: 'application/json',
+            //     data: JSON.stringify(vendorData),
+            //     success: function (response) {
+            //         alert("✅ " + response.message);
+            //         $('#vendorRegisterForm')[0].reset();
+            //         resetButton();
+            //     },
+            //     error: function (xhr) {
+            //         alert("❌ " + (xhr.responseJSON?.message || "Something went wrong"));
+            //         resetButton();
+            //     }
+            // });
+
+                    $.ajax({
+            url: '/RegisterVendor/SaveVendor',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(vendorData),
+            success: function (response) {
+                // Optional: Show success message briefly
+                if (response.message) {
+                    alert("✅ " + response.message);
+                }
+
+                $('#vendorRegisterForm')[0].reset();
+                resetButton();
+
+              
+                if (response.redirect) {
+                    setTimeout(function() {
+                        window.location.href = response.redirect;
+                    }, 500);
+                }
+            },
+            error: function (xhr) {
+                alert("❌ " + (xhr.responseJSON?.message ||
+                      xhr.responseJSON?.error ||
+                      xhr.responseText ||
+                      "Something went wrong"));
+                resetButton();
+            }
+        });
+
+            // Reset button function
+            function resetButton() {
+                $btn.attr("disabled", false);
+                $loader.addClass("d-none");
+                $btn.find(".btn-text").html(`<i class="bi bi-person-check-fill me-1"></i> Register`);
+            }
+        });
+
+
+       
+
+
+    </script>
+
+    <script>
+        $(document).ready(function () {
+            // Toggle password visibility
+            $(".toggle-password").click(function () {
+                const input = $(this).siblings("input");
+                if (input.attr("type") === "password") {
+                    input.attr("type", "text");
+                    $(this).removeClass("bi-eye-slash").addClass("bi-eye");
+                } else {
+                    input.attr("type", "password");
+                    $(this).removeClass("bi-eye").addClass("bi-eye-slash");
+                }
+            });
+
+            // Send OTP button click
+            $("#btnSendOtp").click(function () {
+                const email = $("#Email").val();
+                if (!email) return;
+
+                const btn = $(this);
+                btn.prop("disabled", true);
+
+                $.ajax({
+                    url: '@Url.Action("SendOtpToEmail", "RegisterVendor")',
+                    type: 'POST',
+                    contentType: "application/json",
+                    data: JSON.stringify({ email: email }),
+                    success: function (res) {
+                        if (res.status === "Success") {
+                            $("#generatedOtp").val(res.otp);
+                            $("#txtOtp").prop("disabled", false);
+                            $("#otpMessage").text("OTP sent! Please check your email.").css("color", "green");
+
+                            // Countdown for 30 sec
+                            let countdown = 30;
+                            const interval = setInterval(function () {
+                                btn.text(`Resend (${countdown}s)`);
+                                countdown--;
+                                if (countdown < 0) {
+                                    clearInterval(interval);
+                                    btn.text("Send OTP").prop("disabled", false);
+                                }
+                            }, 1000);
+                        } else {
+                            $("#otpMessage").text(res.message).css("color", "red");
+                            btn.prop("disabled", false);
+                        }
+                    },
+                    error: function (err) {
+                        $("#otpMessage").text("Error sending OTP").css("color", "red");
+                        btn.prop("disabled", false);
+                    }
+                });
+            });
+
+
+
+             function validatePassword(pwd) {
+            const minLength = /.{8,}/;
+            const uppercase = /[A-Z]/;
+            const number = /\d/;
+            const specialChar = /[!@@#$%^&*(),.?":{}|<>]/; // doubled @@ for Razor
+
+            let errors = [];
+
+            if (!minLength.test(pwd)) errors.push("Minimum 8 characters");
+            if (!uppercase.test(pwd)) errors.push("At least one uppercase letter");
+            if (!number.test(pwd)) errors.push("At least one number");
+            if (!specialChar.test(pwd)) errors.push("At least one special character");
+
+            return errors;
+        }
+
+        // Validate password while typing
+        $("#txtPassword").on("input", function () {
+            const pwd = $(this).val();
+            const validationBox = $("#passwordValidation");
+            const errors = validatePassword(pwd);
+
+            if (errors.length > 0) {
+                validationBox.html("Password must have: <br>• " + errors.join("<br>• "))
+                             .css("color", "red");
+            } else {
+                validationBox.text("Password strength: Strong").css("color", "green");
+            }
+        });
+
+        // Confirm password check
+        $("#txtConfirmPassword").on("input", function () {
+            const pwd = $("#txtPassword").val();
+            const confirmPwd = $(this).val();
+            const msg = $("#passwordMessage");
+
+            if (!confirmPwd) {
+                msg.text("");
+                return;
+            }
+
+            if (pwd !== confirmPwd) {
+                msg.text("Passwords do not match").css("color", "red");
+            } else {
+                msg.text("Passwords match").css("color", "green");
+            }
+        });
+        });
+
+             
+        $('#txtOtp').on('input', function () {
+            const enteredOtp = $(this).val().trim();
+            const generatedOtp = $('#generatedOtp').val().trim();
+
+            // Only validate when OTP has exactly 6 digits
+            if (enteredOtp.length === 6) {
+                if (enteredOtp === generatedOtp) {
+                    $("#otpMessage").text("✅ OTP verified successfully!").css("color", "green");
+                    $(this).prop("disabled", true); 
+                    
+                    $("#txtOtp").data("verified", true);
+                } else {
+                    $("#otpMessage").text("❌ Invalid OTP. Please try again.").css("color", "red");
+                    $(this).val(''); 
+                    $("#txtOtp").data("verified", false);
+                }
+            } else {
+                
+                $("#otpMessage").text("").css("color", "");
+            }
+        });
+
+
+
+
+    </script>
+
+
+}
+

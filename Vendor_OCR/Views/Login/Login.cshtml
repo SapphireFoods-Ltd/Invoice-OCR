@@ -1,0 +1,350 @@
+﻿@model Vendor_OCR.Models.LoginModel
+
+@{
+    ViewData["Title"] = "Login";
+    Layout = "_LoginLayout";
+}
+
+
+<style>
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background: #fff;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+    }
+
+    .login-container {
+        background: #fff;
+        padding: 30px 35px;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        width: 100%;
+        max-width: 400px;
+    }
+
+    h2 {
+        text-align: center;
+        margin-bottom: 25px;
+        color: #e43821;
+        font-size: 24px;
+    }
+
+    .form-group {
+        margin-bottom: 10px;
+        position: relative;
+    }
+
+    label {
+        font-weight: 600;
+        display: block;
+        margin-bottom: 5px;
+        color: #444;
+        font-size: 14px;
+    }
+
+    input[type="text"], input[type="email"], input[type="password"] {
+        width: 100%;
+        padding: 12px 14px;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        font-size: 14px;
+        transition: border-color 0.3s ease;
+    }
+
+    input:focus {
+        border-color: #007BFF;
+        outline: none;
+    }
+
+    input.input-validation-error {
+        border-color: red;
+        background-color: #fff0f0;
+    }
+
+    .validation-error {
+        color: red;
+        font-size: 12px;
+        margin-top: 3px;
+        display: block;
+        min-height: 16px;
+    }
+
+    .password-wrapper {
+        position: relative;
+    }
+
+    .toggle-password {
+        position: absolute;
+        top: 50%;
+        right: 10px;
+        transform: translateY(-50%);
+        cursor: pointer;
+        color: #888;
+        font-size: 16px;
+    }
+
+        .toggle-password:hover {
+            color: #007BFF;
+        }
+
+    button[type="submit"], .btn-success {
+        width: 100%;
+        padding: 12px;
+        background-color: #007BFF;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 15px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+    }
+
+        button[type="submit"]:hover {
+            background-color: #0056b3;
+        }
+
+    .btn-success {
+        background-color: #28a745;
+    }
+
+        .btn-success:hover {
+            background-color: #218838;
+        }
+
+    .mt-2 {
+        margin-top: 10px;
+        text-align: center;
+    }
+
+    .logo-img {
+        height: 45px;
+        width: auto;
+        display: block;
+        margin: 0 auto 20px;
+        transition: all 0.3s ease-in-out;
+    }
+
+    /* Modal Styles */
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 999;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background-color: rgba(0,0,0,0.5);
+    }
+
+    .modal-content {
+        background-color: #fff;
+        margin: 0 auto;
+        padding: 25px 30px;
+        border-radius: 12px;
+        width: 100%;
+        max-width: 380px;
+        position: relative;
+        top: 50%;
+        transform: translateY(-50%);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    .close-button {
+        position: absolute;
+        top: 10px;
+        right: 15px;
+        color: #aaa;
+        font-size: 22px;
+        font-weight: bold;
+        cursor: pointer;
+        z-index: 1000;
+    }
+
+        .close-button:hover {
+            color: black;
+        }
+
+    /* Compact spacing for modal form */
+    #forgotPasswordModal .form-group {
+        margin-bottom: 8px;
+    }
+
+    #forgotPasswordModal .password-wrapper input {
+        padding-right: 36px;
+    }
+
+    #forgotPasswordModal .password-wrapper .toggle-password {
+        top: 50%;
+        transform: translateY(-50%);
+    }
+</style>
+
+<!-- Login Form -->
+<div class="login-container">
+    <img src="~/logo/logo-2.png" alt="Sapphire Foods" class="logo-img" id="mainLogo" />
+
+    @if (!ViewData.ModelState.IsValid)
+    {
+        var errorMessage = ViewData.ModelState[string.Empty]?.Errors.FirstOrDefault()?.ErrorMessage;
+        if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <div style="color:red; font-weight:bold; margin-bottom:10px;">
+                @errorMessage
+            </div>
+        }
+    }
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div style="color: green; font-weight: bold; margin-bottom: 10px;">
+            @TempData["SuccessMessage"]
+        </div>
+    }
+
+    <form asp-action="Login" method="post" novalidate>
+        <div class="form-group">
+            <label asp-for="Email"></label>
+            <input asp-for="Email" />
+            <span asp-validation-for="Email" class="validation-error"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="Password"></label>
+            <div class="password-wrapper">
+                <input asp-for="Password" type="password" id="passwordInput" />
+                <i class="fa-solid fa-eye toggle-password" id="togglePassword"></i>
+            </div>
+            <span asp-validation-for="Password" class="validation-error"></span>
+        </div>
+
+        <button type="submit">Login</button>
+
+        <div class="mt-2">
+            <a href="#" id="forgotPasswordLink">Change Password?</a>
+        </div>
+    </form>
+</div>
+
+<!-- Reset Password Modal -->
+<div id="forgotPasswordModal" class="modal">
+    <div class="modal-content">
+        <span class="close-button" id="closeModal">&times;</span>
+        <h2>Reset Password</h2>
+
+        <form asp-action="ResetPassword" method="post" novalidate>
+            <div class="form-group">
+                <label asp-for="Email"></label>
+                <input asp-for="Email" />
+                <span asp-validation-for="Email" class="validation-error"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="OldPassword"></label>
+                <div class="password-wrapper">
+                    <input asp-for="OldPassword" type="password" id="OldPassword" />
+                    <i class="fa-solid fa-eye toggle-password" id="toggleOldPassword"></i>
+                </div>
+                <span asp-validation-for="OldPassword" class="validation-error"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="NewPassword"></label>
+                <div class="password-wrapper">
+                    <input asp-for="NewPassword" type="password" id="NewPassword" />
+                    <i class="fa-solid fa-eye toggle-password" id="toggleNewPassword"></i>
+                </div>
+                <span asp-validation-for="NewPassword" class="validation-error"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="ConfirmPassword"></label>
+                <div class="password-wrapper">
+                    <input asp-for="ConfirmPassword" type="password" id="ConfirmPassword" />
+                    <i class="fa-solid fa-eye toggle-password" id="toggleConfirmPassword"></i>
+                </div>
+                <span id="passwordMatchMessage" class="validation-error"></span>
+                <span asp-validation-for="ConfirmPassword" class="validation-error"></span>
+            </div>
+
+            <button type="submit" class="btn-success">Change Password</button>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @await Html.PartialAsync("_ValidationScriptsPartial")
+
+    <script>
+        const newPasswordInput = document.getElementById("NewPassword");
+        const confirmPasswordInput = document.getElementById("ConfirmPassword");
+        const matchMessage = document.getElementById("passwordMatchMessage");
+
+        function checkPasswordsMatch() {
+            const newPassword = newPasswordInput.value;
+            const confirmPassword = confirmPasswordInput.value;
+
+            if (confirmPassword === "") {
+                matchMessage.textContent = "";
+            } else if (newPassword === confirmPassword) {
+                matchMessage.textContent = "✅ Passwords match.";
+                matchMessage.style.color = "green";
+            } else {
+                matchMessage.textContent = "❌ Passwords do not match.";
+                matchMessage.style.color = "red";
+            }
+        }
+
+        newPasswordInput.addEventListener("input", checkPasswordsMatch);
+        confirmPasswordInput.addEventListener("input", checkPasswordsMatch);
+
+        function setupPasswordToggle(toggleId, inputId) {
+            const toggleIcon = document.getElementById(toggleId);
+            const input = document.getElementById(inputId);
+
+            toggleIcon.addEventListener("click", function () {
+                const isPassword = input.type === "password";
+                input.type = isPassword ? "text" : "password";
+                toggleIcon.classList.toggle("fa-eye");
+                toggleIcon.classList.toggle("fa-eye-slash");
+            });
+        }
+
+        setupPasswordToggle("togglePassword", "passwordInput");
+        setupPasswordToggle("toggleOldPassword", "OldPassword");
+        setupPasswordToggle("toggleNewPassword", "NewPassword");
+        setupPasswordToggle("toggleConfirmPassword", "ConfirmPassword");
+
+        const modal = document.getElementById("forgotPasswordModal");
+        const openModal = document.getElementById("forgotPasswordLink");
+        const closeModal = document.getElementById("closeModal");
+
+        openModal.onclick = function (event) {
+            event.preventDefault();
+            modal.style.display = "block";
+            document.body.style.overflow = "hidden";
+        };
+
+        closeModal.onclick = function () {
+            modal.style.display = "none";
+            document.body.style.overflow = "";
+        };
+
+        window.onload = function () {
+            const showModal = '@(ViewBag.ShowResetModal ?? false)'.toLowerCase() === 'true';
+            if (showModal) {
+                modal.style.display = "block";
+                document.body.style.overflow = "hidden";
+            }
+        };
+    </script>
+}
