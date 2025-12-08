@@ -1,0 +1,33 @@
+[
+  {
+    "ContainingType": "Vendor_OCR.Controllers.InvoiceRequestController",
+    "Method": "ProcessAndInsertInvoiceAsync",
+    "RelativePath": "api/invoices/receive",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "Vendor_OCR.Controllers.SapExportController",
+    "Method": "Run",
+    "RelativePath": "api/SapExport/run",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "mode",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "outputFolder",
+        "Type": "System.String",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  }
+]
